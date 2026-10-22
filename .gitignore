@@ -1,0 +1,14 @@
+# Środowiska wirtualne
+.venv/
+venv/
+env/
+
+# Pliki tymczasowe Pythona
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Systemowe i IDE
+.DS_Store
+.idea/
+.vscode/

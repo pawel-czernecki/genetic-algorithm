@@ -5,24 +5,20 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
+
 from engine.algorithm import GeneticAlgorithm
 from engine.crossover import Crossover
-from engine.functions import FunctionRegistry, HAS_BENCHMARK_FUNCTIONS, HAS_OPFUNU
+from engine.functions import FunctionRegistry
 from engine.mutation import Mutation
 from engine.selection import Selection
 
-try:
-    import matplotlib
-    matplotlib.use("TkAgg")
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-    from matplotlib.figure import Figure
-    HAS_MATPLOTLIB = True
-except ImportError:
-    HAS_MATPLOTLIB = False
-
 
 class GeneticAlgorithmGUI:
-    """Główna klasa interfejsu graficznego (Tkinter/ttk) dla klasycznego algorytmu genetycznego."""
+    """Główna klasa interfejsu graficznego (Tkinter/ttk + Matplotlib) dla klasycznego algorytmu genetycznego."""
 
     SELECTION_MAP = {
         "Turniejowa (Tournament)": Selection.tournament,
@@ -69,7 +65,7 @@ class GeneticAlgorithmGUI:
         self.var_bound_min = tk.DoubleVar(value=functions[0].default_bounds[0])
         self.var_bound_max = tk.DoubleVar(value=functions[0].default_bounds[1])
 
-        self.var_precision_mode = tk.StringVar(value="bits")  # "bits" lub "decimal"
+        self.var_precision_mode = tk.StringVar(value="bits")
         self.var_bit_precision = tk.IntVar(value=16)
         self.var_decimal_precision = tk.IntVar(value=4)
 
@@ -88,8 +84,8 @@ class GeneticAlgorithmGUI:
 
         self.var_inv_prob = tk.DoubleVar(value=0.05)
 
-        self.var_elite_mode = tk.StringVar(value="percent")  # "percent" lub "count"
-        self.var_elite_value = tk.DoubleVar(value=10.0)  # 10% domyślnie
+        self.var_elite_mode = tk.StringVar(value="percent")
+        self.var_elite_value = tk.DoubleVar(value=10.0)
 
         self.var_auto_save = tk.BooleanVar(value=True)
         self.var_status = tk.StringVar(value="Gotowy do uruchomienia.")
@@ -103,11 +99,9 @@ class GeneticAlgorithmGUI:
         main_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         main_pane.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
 
-        # Panel lewy: konfiguracja
         left_container = ttk.Frame(main_pane, width=430)
         main_pane.add(left_container, weight=0)
 
-        # Panel prawy: wyniki, czas, wykresy i tabela epok
         right_container = ttk.Frame(main_pane)
         main_pane.add(right_container, weight=1)
 
@@ -272,7 +266,6 @@ class GeneticAlgorithmGUI:
         ttk.Label(parent, textvariable=self.var_status, foreground="#005580").pack(anchor=tk.W)
 
     def _build_results_panel(self, parent):
-        # Pasek podsumowania i czasu wykonania
         summary_frame = ttk.LabelFrame(parent, text="Podsumowanie obliczeń i wyniki", padding=8)
         summary_frame.pack(fill=tk.X, pady=(0, 6))
 
@@ -281,18 +274,11 @@ class GeneticAlgorithmGUI:
         ttk.Label(time_box, text="Czas wykonywanych obliczeń:", font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT)
         ttk.Label(time_box, textvariable=self.var_exec_time, font=("TkDefaultFont", 11, "bold"), foreground="#b30000").pack(side=tk.LEFT, padx=8)
 
-        pkg_status = (
-            f"Biblioteki funkcji: benchmark_functions={'TAK' if HAS_BENCHMARK_FUNCTIONS else 'FALLBACK'}, "
-            f"opfunu(CEC2014)={'TAK' if HAS_OPFUNU else 'FALLBACK'}"
-        )
-        ttk.Label(time_box, text=pkg_status, foreground="#555555", font=("TkDefaultFont", 8)).pack(side=tk.RIGHT)
-
         self.txt_summary = tk.Text(summary_frame, height=6, wrap=tk.WORD, font=("Consolas", 9))
         self.txt_summary.pack(fill=tk.X)
         self.txt_summary.insert(tk.END, "Skonfiguruj parametry po lewej stronie i kliknij 'Uruchom algorytm'.")
         self.txt_summary.configure(state=tk.DISABLED)
 
-        # Zakładki z wykresami oraz tabelą iteracji
         self.notebook = ttk.Notebook(parent)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -312,27 +298,20 @@ class GeneticAlgorithmGUI:
             text="a) Wartość funkcji celu od kolejnej iteracji   |   b) Średnia wartość funkcji i odchylenie standardowe od iteracji",
             font=("TkDefaultFont", 9, "bold"),
         ).pack(side=tk.LEFT)
-        if HAS_MATPLOTLIB:
-            ttk.Button(top_bar, text="Zapisz wykresy do PNG...", command=self.save_plots_png).pack(side=tk.RIGHT)
+        ttk.Button(top_bar, text="Zapisz wykresy do PNG...", command=self.save_plots_png).pack(side=tk.RIGHT)
 
-        if HAS_MATPLOTLIB:
-            self.figure = Figure(figsize=(9.5, 5.2), dpi=100)
-            self.ax_best = self.figure.add_subplot(1, 2, 1)
-            self.ax_stats = self.figure.add_subplot(1, 2, 2)
-            self.figure.tight_layout(pad=3.0)
+        self.figure = Figure(figsize=(9.5, 5.2), dpi=100)
+        self.ax_best = self.figure.add_subplot(1, 2, 1)
+        self.ax_stats = self.figure.add_subplot(1, 2, 2)
+        self.figure.tight_layout(pad=3.0)
 
-            self.canvas = FigureCanvasTkAgg(self.figure, master=parent)
-            self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.canvas = FigureCanvasTkAgg(self.figure, master=parent)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-            toolbar_frame = ttk.Frame(parent)
-            toolbar_frame.pack(fill=tk.X)
-            toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
-            toolbar.update()
-        else:
-            # Wbudowany renderer wykresów na wypadek braku biblioteki matplotlib
-            self.fallback_canvas = tk.Canvas(parent, bg="white")
-            self.fallback_canvas.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-            self.fallback_canvas.bind("<Configure>", lambda _e: self._draw_fallback_plots())
+        toolbar_frame = ttk.Frame(parent)
+        toolbar_frame.pack(fill=tk.X)
+        toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
+        toolbar.update()
 
     def _build_table_area(self, parent):
         cols = ("epoch", "best_fitness", "global_best", "mean_fitness", "std_fitness", "worst_fitness", "elapsed_time")
@@ -618,109 +597,40 @@ class GeneticAlgorithmGUI:
     def _update_plots(self, history, func_name, num_vars):
         if not history:
             return
-        if HAS_MATPLOTLIB:
-            epochs = [h["epoch"] for h in history]
-            best_vals = [h["best_fitness"] for h in history]
-            global_best_vals = [h["global_best_fitness"] for h in history]
-            mean_vals = [h["mean_fitness"] for h in history]
-            std_vals = [h["std_fitness"] for h in history]
+        epochs = [h["epoch"] for h in history]
+        best_vals = [h["best_fitness"] for h in history]
+        global_best_vals = [h["global_best_fitness"] for h in history]
+        mean_vals = [h["mean_fitness"] for h in history]
+        std_vals = [h["std_fitness"] for h in history]
 
-            # Wykres 9a: Wartość funkcji od kolejnej iteracji
-            self.ax_best.clear()
-            self.ax_best.plot(epochs, best_vals, label="Najlepszy w epoce", color="#1f77b4", linewidth=1.3, alpha=0.8)
-            self.ax_best.plot(epochs, global_best_vals, label="Najlepszy globalnie", color="#d62728", linewidth=2.0)
-            self.ax_best.set_title(f"a) Wartość funkcji celu od iteracji\n({func_name}, N={num_vars})", fontsize=9.5)
-            self.ax_best.set_xlabel("Iteracja (Epoka)")
-            self.ax_best.set_ylabel("Wartość funkcji celu f(x)")
-            self.ax_best.grid(True, linestyle="--", alpha=0.5)
-            self.ax_best.legend(loc="best", fontsize=8)
+        # Wykres 9a: Wartość funkcji od kolejnej iteracji
+        self.ax_best.clear()
+        self.ax_best.plot(epochs, best_vals, label="Najlepszy w epoce", color="#1f77b4", linewidth=1.3, alpha=0.8)
+        self.ax_best.plot(epochs, global_best_vals, label="Najlepszy globalnie", color="#d62728", linewidth=2.0)
+        self.ax_best.set_title(f"a) Wartość funkcji celu od iteracji\n({func_name}, N={num_vars})", fontsize=9.5)
+        self.ax_best.set_xlabel("Iteracja (Epoka)")
+        self.ax_best.set_ylabel("Wartość funkcji celu f(x)")
+        self.ax_best.grid(True, linestyle="--", alpha=0.5)
+        self.ax_best.legend(loc="best", fontsize=8)
 
-            # Wykres 9b: Średnia wartość funkcji i odchylenie standardowe od kolejnej iteracji
-            self.ax_stats.clear()
-            self.ax_stats.plot(epochs, mean_vals, label="Średnia wartość funkcji", color="#2ca02c", linewidth=1.8)
-            self.ax_stats.plot(epochs, std_vals, label="Odchylenie standardowe", color="#ff7f0e", linewidth=1.5, linestyle="--")
-            lower = [m - s for m, s in zip(mean_vals, std_vals)]
-            upper = [m + s for m, s in zip(mean_vals, std_vals)]
-            self.ax_stats.fill_between(epochs, lower, upper, color="#2ca02c", alpha=0.15, label="Średnia ± odch. std")
-            self.ax_stats.set_title(f"b) Średnia wartość funkcji i odch. std\n({func_name}, N={num_vars})", fontsize=9.5)
-            self.ax_stats.set_xlabel("Iteracja (Epoka)")
-            self.ax_stats.set_ylabel("Wartość")
-            self.ax_stats.grid(True, linestyle="--", alpha=0.5)
-            self.ax_stats.legend(loc="best", fontsize=8)
+        # Wykres 9b: Średnia wartość funkcji i odchylenie standardowe od kolejnej iteracji
+        self.ax_stats.clear()
+        self.ax_stats.plot(epochs, mean_vals, label="Średnia wartość funkcji", color="#2ca02c", linewidth=1.8)
+        self.ax_stats.plot(epochs, std_vals, label="Odchylenie standardowe", color="#ff7f0e", linewidth=1.5, linestyle="--")
+        lower = [m - s for m, s in zip(mean_vals, std_vals)]
+        upper = [m + s for m, s in zip(mean_vals, std_vals)]
+        self.ax_stats.fill_between(epochs, lower, upper, color="#2ca02c", alpha=0.15, label="Średnia ± odch. std")
+        self.ax_stats.set_title(f"b) Średnia wartość funkcji i odch. std\n({func_name}, N={num_vars})", fontsize=9.5)
+        self.ax_stats.set_xlabel("Iteracja (Epoka)")
+        self.ax_stats.set_ylabel("Wartość")
+        self.ax_stats.grid(True, linestyle="--", alpha=0.5)
+        self.ax_stats.legend(loc="best", fontsize=8)
 
-            self.figure.tight_layout(pad=2.5)
-            self.canvas.draw()
-        else:
-            self._draw_fallback_plots()
-
-    def _draw_fallback_plots(self):
-        if HAS_MATPLOTLIB or not hasattr(self, "fallback_canvas"):
-            return
-        c = self.fallback_canvas
-        c.delete("all")
-        if not self.last_ga or not self.last_ga.history:
-            c.create_text(300, 150, text="Uruchom algorytm, aby wygenerować wykresy.", font=("TkDefaultFont", 11))
-            return
-
-        w = max(600, c.winfo_width())
-        h = max(320, c.winfo_height())
-        mid = w // 2
-        history = self.last_ga.history
-        epochs = [r["epoch"] for r in history]
-
-        self._draw_single_canvas_chart(
-            c,
-            x0=45,
-            y0=30,
-            x1=mid - 20,
-            y1=h - 40,
-            epochs=epochs,
-            series=[
-                ([r["best_fitness"] for r in history], "#1f77b4", "Najlepszy w epoce"),
-                ([r["global_best_fitness"] for r in history], "#d62728", "Najlepszy globalnie"),
-            ],
-            title="a) Wartość funkcji celu od kolejnej iteracji",
-        )
-        self._draw_single_canvas_chart(
-            c,
-            x0=mid + 35,
-            y0=30,
-            x1=w - 25,
-            y1=h - 40,
-            epochs=epochs,
-            series=[
-                ([r["mean_fitness"] for r in history], "#2ca02c", "Średnia funkcji"),
-                ([r["std_fitness"] for r in history], "#ff7f0e", "Odchylenie std"),
-            ],
-            title="b) Średnia i odchylenie standardowe od iteracji",
-        )
-
-    def _draw_single_canvas_chart(self, canvas, x0, y0, x1, y1, epochs, series, title):
-        canvas.create_rectangle(x0, y0, x1, y1, outline="#888888", fill="#fafafa")
-        canvas.create_text((x0 + x1) // 2, y0 - 12, text=title, font=("TkDefaultFont", 9, "bold"))
-
-        all_vals = [v for vals, _, _ in series for v in vals]
-        min_v, max_v = min(all_vals), max(all_vals)
-        if abs(max_v - min_v) < 1e-12:
-            max_v = min_v + 1.0
-
-        n = len(epochs)
-        for idx, (vals, color, label) in enumerate(series):
-            pts = []
-            for i, val in enumerate(vals):
-                px = x0 + (x1 - x0) * (i / max(1, n - 1))
-                py = y1 - (y1 - y0) * ((val - min_v) / (max_v - min_v))
-                pts.extend((px, py))
-            if len(pts) >= 4:
-                canvas.create_line(*pts, fill=color, width=2)
-            canvas.create_text(x1 - 10, y0 + 15 + idx * 16, text=label, fill=color, anchor=tk.E, font=("TkDefaultFont", 8, "bold"))
-
-        canvas.create_text(x0, y0 + 6, text=f"{max_v:.2f}", anchor=tk.E, font=("TkDefaultFont", 7))
-        canvas.create_text(x0, y1 - 6, text=f"{min_v:.2f}", anchor=tk.E, font=("TkDefaultFont", 7))
-        canvas.create_text((x0 + x1) // 2, y1 + 15, text=f"Iteracje (1 .. {epochs[-1]})", font=("TkDefaultFont", 8))
+        self.figure.tight_layout(pad=2.5)
+        self.canvas.draw()
 
     def save_plots_png(self):
-        if not HAS_MATPLOTLIB or self.last_ga is None:
+        if self.last_ga is None:
             messagebox.showinfo("Informacja", "Najpierw uruchom algorytm, aby zapisać wykres.")
             return
         filepath = filedialog.asksaveasfilename(
@@ -767,4 +677,3 @@ def launch_gui():
     app = GeneticAlgorithmGUI(root)
     root.mainloop()
     return app
-

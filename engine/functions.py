@@ -72,19 +72,38 @@ def _make_cec2014_evaluator(func_name, num_variables):
     return _eval_adapted
 
 
+def _get_cec2014_opt_pos(func_name, num_variables):
+    """Pobiera rzeczywiste współrzędne wektora optimum x* z instancji CEC2014 w opfunu."""
+    cls = getattr(cec2014, func_name)
+    supported_dims = [10, 20, 30, 50, 100]
+    target_dim = next((d for d in supported_dims if d >= num_variables), 100)
+    instance = cls(ndim=target_dim)
+    return [round(float(v), 6) for v in instance.x_global[:num_variables]]
+
+
 class FunctionRegistry:
     """Rejestr funkcji testowych dostępnych w aplikacji (benchmark_functions oraz opfunu CEC2014)."""
 
     FUNCTIONS = [
         BenchmarkFunctionSpec(
             key="bf_hypersphere",
-            name="Hypersphere (Sphere) [benchmark_functions]",
+            name="Hypersphere [benchmark_functions]",
             category="FunkcjeTestowe (benchmark_functions)",
-            default_bounds=(-5.12, 5.12),
+            default_bounds=(-5.0, 5.0),
             optimum_value_fn=lambda n: 0.0,
             optimum_pos_fn=lambda n: [0.0] * n,
             builder_fn=lambda n: _make_bf_evaluator("Hypersphere", n),
-            description="Funkcja sferyczna f(x) = sum(x_i^2). Globalne minimum f(0,...,0) = 0.",
+            description="Hypersphere: f(x) = sum(x_i^2). Zakres: [-5.0, 5.0]. Globalne minimum: 0.0 w punkcie [0.0, ..., 0.0].",
+        ),
+        BenchmarkFunctionSpec(
+            key="bf_ackley",
+            name="Ackley [benchmark_functions]",
+            category="FunkcjeTestowe (benchmark_functions)",
+            default_bounds=(-32.768, 32.768),
+            optimum_value_fn=lambda n: 4.440892098500626e-16,
+            optimum_pos_fn=lambda n: [0.0] * n,
+            builder_fn=lambda n: _make_bf_evaluator("Ackley", n),
+            description="Ackley: zakres [-32.768, 32.768]. Globalne minimum: 4.440892098500626e-16 w punkcie [0.0, ..., 0.0].",
         ),
         BenchmarkFunctionSpec(
             key="bf_rastrigin",
@@ -94,107 +113,17 @@ class FunctionRegistry:
             optimum_value_fn=lambda n: 0.0,
             optimum_pos_fn=lambda n: [0.0] * n,
             builder_fn=lambda n: _make_bf_evaluator("Rastrigin", n),
-            description="Wielomodalna funkcja Rastrigina z licznymi minimami lokalnymi. Globalne minimum f(0,...,0) = 0.",
-        ),
-        BenchmarkFunctionSpec(
-            key="bf_ackley",
-            name="Ackley [benchmark_functions]",
-            category="FunkcjeTestowe (benchmark_functions)",
-            default_bounds=(-32.768, 32.768),
-            optimum_value_fn=lambda n: 0.0,
-            optimum_pos_fn=lambda n: [0.0] * n,
-            builder_fn=lambda n: _make_bf_evaluator("Ackley", n),
-            description="Funkcja Ackleya. Globalne minimum f(0,...,0) = 0.",
-        ),
-        BenchmarkFunctionSpec(
-            key="bf_rosenbrock",
-            name="Rosenbrock [benchmark_functions]",
-            category="FunkcjeTestowe (benchmark_functions)",
-            default_bounds=(-5.0, 10.0),
-            optimum_value_fn=lambda n: 0.0,
-            optimum_pos_fn=lambda n: [1.0] * n,
-            builder_fn=lambda n: _make_bf_evaluator("Rosenbrock", n),
-            description="Dolina Rosenbrocka (funkcja bananowa). Globalne minimum f(1,...,1) = 0.",
-        ),
-        BenchmarkFunctionSpec(
-            key="bf_griewank",
-            name="Griewank [benchmark_functions]",
-            category="FunkcjeTestowe (benchmark_functions)",
-            default_bounds=(-600.0, 600.0),
-            optimum_value_fn=lambda n: 0.0,
-            optimum_pos_fn=lambda n: [0.0] * n,
-            builder_fn=lambda n: _make_bf_evaluator("Griewank", n),
-            description="Funkcja Griewanka. Globalne minimum f(0,...,0) = 0.",
-        ),
-        BenchmarkFunctionSpec(
-            key="bf_schwefel",
-            name="Schwefel [benchmark_functions]",
-            category="FunkcjeTestowe (benchmark_functions)",
-            default_bounds=(-500.0, 500.0),
-            optimum_value_fn=lambda n: 0.0,
-            optimum_pos_fn=lambda n: [420.968746] * n,
-            builder_fn=lambda n: _make_bf_evaluator("Schwefel", n),
-            description="Funkcja Schwefela. Globalne minimum f(420.9687,...,420.9687) = 0.",
-        ),
-        BenchmarkFunctionSpec(
-            key="bf_styblinski_tang",
-            name="Styblinski-Tang [benchmark_functions]",
-            category="FunkcjeTestowe (benchmark_functions)",
-            default_bounds=(-5.0, 5.0),
-            optimum_value_fn=lambda n: -39.16616570377142 * n,
-            optimum_pos_fn=lambda n: [-2.903534] * n,
-            builder_fn=lambda n: _make_bf_evaluator("StyblinskiTang", n),
-            description="Funkcja Styblinskiego-Tanga. Minimum f(-2.9035,...,-2.9035) = -39.166165 * N.",
-        ),
-        BenchmarkFunctionSpec(
-            key="cec2014_f1",
-            name="CEC2014 F1: Rotated High Conditioned Elliptic [opfunu]",
-            category="CEC 2014 (opfunu)",
-            default_bounds=(-100.0, 100.0),
-            optimum_value_fn=lambda n: 100.0,
-            optimum_pos_fn=lambda n: "wektor przesunięcia o_1 (opfunu CEC2014)",
-            builder_fn=lambda n: _make_cec2014_evaluator("F12014", n),
-            description="CEC2014 F1: Rotated High Conditioned Elliptic Function. Globalne minimum f* = 100.",
+            description="Rastrigin: f(x) = 10N + sum(x_i^2 - 10cos(2*pi*x_i)). Zakres: [-5.12, 5.12]. Globalne minimum: 0.0 w [0.0, ..., 0.0].",
         ),
         BenchmarkFunctionSpec(
             key="cec2014_f2",
-            name="CEC2014 F2: Rotated Bent Cigar [opfunu]",
+            name="CEC2014 F2: Rotated Bent Cigar Function [opfunu]",
             category="CEC 2014 (opfunu)",
             default_bounds=(-100.0, 100.0),
             optimum_value_fn=lambda n: 200.0,
-            optimum_pos_fn=lambda n: "wektor przesunięcia o_2 (opfunu CEC2014)",
+            optimum_pos_fn=lambda n: _get_cec2014_opt_pos("F22014", n),
             builder_fn=lambda n: _make_cec2014_evaluator("F22014", n),
-            description="CEC2014 F2: Rotated Bent Cigar Function. Globalne minimum f* = 200.",
-        ),
-        BenchmarkFunctionSpec(
-            key="cec2014_f3",
-            name="CEC2014 F3: Rotated Discus [opfunu]",
-            category="CEC 2014 (opfunu)",
-            default_bounds=(-100.0, 100.0),
-            optimum_value_fn=lambda n: 300.0,
-            optimum_pos_fn=lambda n: "wektor przesunięcia o_3 (opfunu CEC2014)",
-            builder_fn=lambda n: _make_cec2014_evaluator("F32014", n),
-            description="CEC2014 F3: Rotated Discus Function. Globalne minimum f* = 300.",
-        ),
-        BenchmarkFunctionSpec(
-            key="cec2014_f8",
-            name="CEC2014 F8: Shifted Rastrigin [opfunu]",
-            category="CEC 2014 (opfunu)",
-            default_bounds=(-100.0, 100.0),
-            optimum_value_fn=lambda n: 800.0,
-            optimum_pos_fn=lambda n: "wektor przesunięcia o_8 (opfunu CEC2014)",
-            builder_fn=lambda n: _make_cec2014_evaluator("F82014", n),
-            description="CEC2014 F8: Shifted Rastrigin's Function. Globalne minimum f* = 800.",
-        ),
-        BenchmarkFunctionSpec(
-            key="cec2014_f9",
-            name="CEC2014 F9: Shifted & Rotated Rastrigin [opfunu]",
-            category="CEC 2014 (opfunu)",
-            default_bounds=(-100.0, 100.0),
-            optimum_value_fn=lambda n: 900.0,
-            optimum_pos_fn=lambda n: "wektor przesunięcia o_9 (opfunu CEC2014)",
-            builder_fn=lambda n: _make_cec2014_evaluator("F92014", n),
-            description="CEC2014 F9: Shifted and Rotated Rastrigin's Function. Globalne minimum f* = 900.",
+            description="CEC2014 F2: Rotated Bent Cigar Function. Zakres: [-100.0, 100.0]. Globalne minimum f* = 200.0.",
         ),
     ]
 

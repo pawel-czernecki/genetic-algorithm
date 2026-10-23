@@ -10,7 +10,7 @@
 
 ---
 
-## 1. Informacje o wykorzystywanych technologiach (Pkt 11a)
+## 1. Informacje o wykorzystywanych technologiach
 
 Projekt został zrealizowany w paradygmacie obiektowym w języku **Python**, z zachowaniem czystej separacji pomiędzy silnikiem ewolucyjnym (`engine/`) a warstwą interfejsu użytkownika (`gui/`).
 
@@ -19,33 +19,29 @@ Projekt został zrealizowany w paradygmacie obiektowym w języku **Python**, z z
 * **Wizualizacja wykresów:** `matplotlib` (wersja `3.10.9`) – wykresy osadzone bezpośrednio w oknie aplikacji za pomocą `FigureCanvasTkAgg` oraz `NavigationToolbar2Tk`.
 * **Biblioteki obliczeniowe:**
     * `numpy` (wersja `2.2.6`) – wektoryzacja obliczeń numerycznych, operacje tablicowe na chromosomach i populacji.
-    * `scipy` (wersja `1.15.3`) – wsparcie statystyczne i numeryczne wykorzystywane przez moduły benchmarkowe.
-* **Biblioteki zaimplementowanych funkcji testowych (zgodnie z pkt 5 wytycznych):**
+* **Biblioteki zaimplementowanych funkcji testowych:**
     * `benchmark_functions` (wersja `1.1.4`) – wielowymiarowe funkcje ciągłe (*Hypersphere*, *Ackley*, *Rastrigin*).
     * `opfunu` (wersja `1.0.4`) – oficjalny pakiet benchmarków konferencji IEEE CEC 2014 (*F2: Rotated Bent Cigar Function*).
 * **Zapis danych i serializacja:** standardowe moduły `csv` oraz `json` (automatyczny zapis historii iteracji do katalogu `results/`).
 
 ---
 
-## 2. Wymagania środowiska i instrukcja uruchomienia (Pkt 11b)
+## 2. Wymagania środowiska i instrukcja uruchomienia
 
 ### 2.1. Wymagania systemowe
 
-* System operacyjny: Linux (np. Ubuntu 22.04+) / Windows 10/11 / macOS
+* System operacyjny: Linux
 * Zainstalowany interpreter: Python $\ge 3.10$
 
 ### 2.2. Zestawienie bibliotek i zależności
 Wszystkie zależności zewnętrzne zdefiniowano w pliku `requirements.txt`:
 
-| Biblioteka | Wersja zainstalowana | Minimalna wersja (`requirements.txt`) | Rola w projekcie |
-| :--- | :---: | :---: | :--- |
-| `numpy` | `2.2.6` | `>=1.24.0` | Wektoryzacja operacji genetycznych i obliczeń macierzowych |
-| `scipy` | `1.15.3` | `>=1.10.0` | Wsparcie statystyczne i numeryczne dla benchmarków |
-| `matplotlib` | `3.10.9` | `>=3.7.0` | Generowanie i osadzanie wykresów 9a oraz 9b w GUI |
-| `benchmark_functions` | `1.1.4` | `>=1.1.3` | Gotowa implementacja funkcji Hypersphere, Ackley, Rastrigin |
-| `opfunu` | `1.0.4` | `>=1.0.0` | Gotowa implementacja funkcji CEC 2014 (F2 Bent Cigar) |
-| `weasyprint` | `70.0` | `>=60.0` | Kompilacja sprawozdania z formatu Markdown/HTML do PDF |
-| `markdown` | `3.10.3` | `>=3.4.0` | Konwersja i parsowanie dokumentu sprawozdania |
+| Biblioteka | Wersja | Rola w projekcie |
+| :--- | :---: | :--- |
+| `numpy` | `2.2.6` | Wektoryzacja operacji genetycznych i obliczeń macierzowych |
+| `matplotlib` | `3.10.9` | Generowanie i osadzanie wykresów zbieżności w GUI |
+| `benchmark_functions` | `1.1.4` | Gotowa implementacja funkcji Hypersphere, Ackley, Rastrigin |
+| `opfunu` | `1.0.4` | Gotowa implementacja funkcji CEC 2014 (F2 Bent Cigar) |
 
 Instalacja środowiska i zależności:
 ```bash
@@ -62,54 +58,14 @@ venv/bin/python main.py
 
 ---
 
-## 3. Architektura i implementacja algorytmu genetycznego
+## 3. Wybrane funkcje testowe
 
-### 3.1. Reprezentacja chromosomu i kodowanie (Pkt 4a, Pkt 2)
-
-* **Reprezentacja:** binarna (ciąg bitów $0/1$).
-* **Długość chromosomu:** $L = N \cdot m$, gdzie $N$ to liczba zmiennych decyzyjnych, a $m$ to liczba bitów na zmienną.
-* **Konfiguracja dokładności:**
-  * *Tryb bitowy:* bezpośrednie zdefiniowanie liczby bitów $m$ (np. $m = 16$).
-  * *Tryb dziesiętny:* zdefiniowanie dokładności $d$ (dokładność do $10^{-d}$). Liczba bitów wyznaczana jest ze wzoru:
-    $$m = \left\lceil \log_2\big((b - a) \cdot 10^d + 1\big) \right\rceil$$
-
-* **Dekodowanie:** przekształcenie podciągu bitów o wartości dziesiętnej $dec \in [0, 2^m - 1]$ na liczbę rzeczywistą $x_i \in [a_i, b_i]$:
-  $$x_i = a_i + dec \cdot \frac{b_i - a_i}{2^m - 1}$$
-
-### 3.2. Operatory genetyczne
-
-1. **Metody selekcji (Pkt 4d):**
-    * *Turniejowa:* losowanie $k$ osobników (parametr $k$ konfigurowalny w GUI) i wybór najlepszego.
-    * *Koło ruletki:* prawdopodobieństwo wyboru proporcjonalne do przystosowania (z przesunięciem liniowym dla minimalizacji i wartości ujemnych).
-    * *Najlepszych / Najgorszych:* selekcja obcięta z konfigurowalną pulą rodzicielską (np. $50\%$ najlepszych/najgorszych osobników).
-
-2. **Metody krzyżowania (Pkt 4e):**
-    * *Jednopunktowe:* cięcie w jednym punkcie.
-    * *Dwupunktowe:* cięcie w dwóch punktach i wymiana środkowego segmentu.
-    * *Jednorodne:* wymiana każdego bitu z prawdopodobieństwem $0.5$.
-    * *Ziarniste:* wymiana całych bloków bitów odpowiadających kolejnym zmiennym decyzyjnym.
-    * Konfigurowalne prawdopodobieństwo krzyżowania: $p_c \in [0.0, 1.0]$.
-
-3. **Metody mutacji i operator inwersji (Pkt 4f, Pkt 4g):**
-    * *Mutacja brzegowa:* negacja pierwszego lub ostatniego bitu chromosomu.
-    * *Mutacja jednopunktowa:* negacja jednego losowego bitu.
-    * *Mutacja dwupunktowa:* negacja dwóch różnych losowych bitów.
-    * *Operator inwersji:* odwrócenie kolejności bitów pomiędzy dwoma losowymi punktami z niezależnym prawdopodobieństwem $p_i$.
-
-4. **Strategia elitarna (Pkt 4h):**
-    * Możliwość zdefiniowania liczby chronionych osobników w ujęciu procentowym (% populacji) lub liczbowym (dokładna liczba sztuk).
-    * Elity są klonowane i bezpośrednio przenoszone do nowej populacji bez mutacji.
-
----
-
-## 4. Wybrane funkcje testowe (Pkt 11c)
-
-Zgodnie z wytycznymi wybrano:
+Do badań wybrano dwie funkcje testowe o odmiennej charakterystyce:
 
 1. Jedną funkcję z biblioteki `benchmark_functions`: **Rastrigin** ($N = 20$) – funkcja silnie wielomodalna z gęstą siecią minimów lokalnych.
 2. Jedną funkcję trudniejszą z zawodów IEEE CEC 2014 z biblioteki `opfunu`: **CEC2014 F2: Rotated Bent Cigar Function** ($N = 10, 20, 30$).
 
-### 4.1. Funkcja 1: Rastrigin [benchmark_functions]
+### 3.1. Funkcja 1: Rastrigin [benchmark_functions]
 
 * **Wzór matematyczny:**
   $$f(x) = 10 \cdot N + \sum_{i=1}^N \left( x_i^2 - 10 \cos(2\pi x_i) \right)$$
@@ -129,7 +85,7 @@ Zgodnie z wytycznymi wybrano:
 
 ---
 
-### 4.2. Funkcja 2: CEC2014 F2 (Rotated Bent Cigar Function)
+### 3.2. Funkcja 2: CEC2014 F2 (Rotated Bent Cigar Function)
 
 * **Wzór matematyczny:**
   $$f(x) = z_1^2 + 10^6 \sum_{i=2}^N z_i^2 + f_{\text{bias}}, \quad z = M \cdot (x - o)$$
@@ -139,7 +95,7 @@ Zgodnie z wytycznymi wybrano:
 * **Charakterystyka:** funkcja obrócona (*rotated*), przesunięta (*shifted*), o bardzo wąskiej i stromej grani (*narrow ridge*), silnie uwarunkowana numerycznie.
 * **Rysunek poglądowy funkcji:**  
   ![Wykres 3D funkcji Bent Cigar](images/bent_cigar_3d.png)  
-  *(Placeholder: wstaw zrzut wykresu 3D funkcji Bent Cigar)*
+  *Wykres 3D powierzchni funkcji Bent Cigar dla przestrzeni dwuwymiarowej ($N = 2$).*
 
 * **Teoretyczne wartości optimum:**
   * Wartość optimum: $f^* = 200.0$
@@ -149,7 +105,7 @@ Zgodnie z wytycznymi wybrano:
 
 ---
 
-## 5. Metodologia badawcza i plan eksperymentów (Pkt 11f)
+## 4. Metodologia badawcza i plan eksperymentów
 
 Każda badana konfiguracja algorytmu została uruchomiona **10 razy** z rzędu.
 
@@ -161,13 +117,13 @@ Dla każdej serii wyznaczono:
 * **Odchylenie standardowe** pomiędzy uruchomieniami ($\sigma_{\text{serii}}$),
 * **Średni czas obliczeń** pojedynczego przebiegu [$s$].
 
-Zgodnie z wymaganiem z punktu 11f, **wykresy zbieżności (Wykres 9a oraz Wykres 9b) zamieszczono wyłącznie z najlepszego spośród 10 uruchomień**.
+Wykresy przebiegu zbieżności dla każdego eksperymentu przedstawiają dane z **najlepszego spośród 10 uruchomień** w danej serii.
 
 ---
 
-## 6. Wyniki eksperymentów
+## 5. Wyniki eksperymentów
 
-### 6.1. Eksperyment 1: Wpływ metody krzyżowania
+### 5.1. Eksperyment 1: Wpływ metody krzyżowania
 
 * **Stałe parametry:** Funkcja: Rastrigin, $N = 20$, Populacja = 80, Epoki = 100, Dokładność bitowa = 16 bitów, Selekcja: Turniejowa ($k = 3$), Mutacja: Jednopunktowa ($p_m = 0.3$), Inwersja ($p_i = 0.3$), Elitaryzm = 10%.
 
@@ -179,23 +135,23 @@ Zgodnie z wymaganiem z punktu 11f, **wykresy zbieżności (Wykres 9a oraz Wykres
 | **Ziarniste** | 0.8 | **19.145391** | **12.152273** | **29.034867** | **4.644057** | 0.3553 |
 
 #### Wykresy z najlepszego uruchomienia (Krzyżowanie ziarniste, $f_{\min} = 12.152273$):
-![Wykres 9a - Krzyżowanie](images/exp1_best_plot9a.png)  
-*Rysunek 1: Wartość funkcji celu od kolejnej iteracji dla najlepszego uruchomienia w serii (Pkt 11d). Cienkie, przerywane linie przedstawiają pozostałe 9 prób w serii, a linia ciągła – próbę optymalną.*
+![Wykres wartości funkcji celu - Krzyżowanie](images/exp1_best_plot9a.png)  
+*Rysunek 1: Wartość funkcji celu od kolejnej iteracji dla najlepszego uruchomienia w serii. Cienkie, przerywane linie przedstawiają pozostałe 9 prób w serii, a linia ciągła – próbę najlepszą.*
 
-![Wykres 9b - Krzyżowanie](images/exp1_best_plot9b.png)  
-*Rysunek 2: Średnia wartość funkcji oraz odchylenie standardowe wewnątrz populacji od kolejnej iteracji dla najlepszego uruchomienia (Pkt 11e).*
+![Wykres średniej i odchylenia - Krzyżowanie](images/exp1_best_plot9b.png)  
+*Rysunek 2: Średnia wartość funkcji oraz odchylenie standardowe wewnątrz populacji od kolejnej iteracji dla najlepszego uruchomienia.*
 
 #### Komentarz do wyników:
 
-1. **Dominacja krzyżowania ziarnistego:** Operator ziarnisty uzyskał bezkonkurencyjnie najniższą średnią wartość funkcji celu ($19.15$), najlepszy wynik globalny ($12.15$) oraz najmniejsze odchylenie standardowe serii ($4.64$), co świadczy o najwyższej powtarzalności. Wynika to bezpośrednio ze struktury funkcji Rastrigin: jako funkcja separowalna, składa się z sumy $20$ niezależnych wyrazów. Krzyżowanie ziarniste wymienia całe bloki bitów odpowiadające poszczególnym zmiennym decyzyjnym bez rozcinania ich zapisu, skutecznie łącząc dobrze dobrane współrzędne od obojga rodziców (teoria bloków budulcowych – *building blocks*).
+1. **Dominacja krzyżowania ziarnistego:** Operator ziarnisty uzyskał bezkonkurencyjnie najniższą średnią wartość funkcji celu ($19.15$), najlepszy wynik globalny ($12.15$) oraz najmniejsze odchylenie standardowe serii ($4.64$), co świadczy o najwyższej powtarzalności.
 
-2. **Wyższość krzyżowania dwupunktowego nad jednopunktowym:** Krzyżowanie 2-punktowe osiągnęło zauważalnie lepszy wynik średni ($24.27$) niż 1-punktowe ($28.93$). Przy 20 zmiennych długość chromosomu wynosi $320$ bitów; w tak długim ciągu krzyżowanie jednopunktowe cierpi na błąd pozycyjny (*positional bias*), podczas gdy dwupunktowe znacznie efektywniej manipuluje środkowymi segmentami chromosomu.
+2. **Wyższość krzyżowania dwupunktowego nad jednopunktowym:** Krzyżowanie 2-punktowe osiągnęło zauważalnie lepszy wynik średni ($24.27$) niż 1-punktowe ($28.93$).
 
-3. **Destrukcyjny charakter krzyżowania jednorodnego:** Krzyżowanie jednorodne okazało się najsłabsze (średnia $32.03$, maksimum $49.08$, odchylenie std $9.16$). Niezależna wymiana każdego bitu z prawdopodobieństwem $0.5$ niszczy spójność reprezentacji binarnej liczb rzeczywistych (szczególnie starszych bitów MSB), zachowując się jak nadmierna mutacja i uniemożliwiając stabilne schodzenie populacji w lokalne doliny. Ponadto generowało największy średni czas obliczeń ($0.45\text{ s}$) ze względu na konieczność losowania maski bit po bicie.
+3. **Destrukcyjny charakter krzyżowania jednorodnego:** Krzyżowanie jednorodne okazało się najsłabsze (średnia $32.03$, maksimum $49.08$, odchylenie std $9.16$). Niezależna wymiana każdego bitu z prawdopodobieństwem $0.5$ niszczy spójność reprezentacji binarnej liczb rzeczywistych (szczególnie starszych bitów), zachowując się jak nadmierna mutacja i uniemożliwiając stabilne schodzenie populacji w lokalne doliny.
 
 ---
 
-### 6.2. Eksperyment 2: Wpływ metody mutacji
+### 5.2. Eksperyment 2: Wpływ metody mutacji
 
 * **Stałe parametry:** Funkcja: Rastrigin, $N = 20$, Populacja = 80, Epoki = 100, Dokładność bitowa = 16 bitów, Krzyżowanie: Dwupunktowe ($p_c = 0.8$), Selekcja: Turniejowa ($k = 3$), Inwersja ($p_i = 0.3$), Elitaryzm = 10%.
 
@@ -207,23 +163,23 @@ Zgodnie z wymaganiem z punktu 11f, **wykresy zbieżności (Wykres 9a oraz Wykres
 | **Brzegowa** | 0.30 | 41.973167 | 23.175428 | 63.613381 | 10.456822 | 0.3478 |
 
 #### Wykresy z najlepszego uruchomienia (Mutacja dwupunktowa, $f_{\min} = 18.221812$):
-![Wykres 9a - Mutacja](images/exp2_best_plot9a.png)  
+![Wykres wartości funkcji celu - Mutacja](images/exp2_best_plot9a.png)  
 *Rysunek 3: Wartość funkcji celu od iteracji dla najlepszego uruchomienia w serii mutacji (linia ciągła) wraz z pozostałymi 9 próbami (linie przerywane).*
 
-![Wykres 9b - Mutacja](images/exp2_best_plot9b.png)  
+![Wykres średniej i odchylenia - Mutacja](images/exp2_best_plot9b.png)  
 *Rysunek 4: Średnia wartość funkcji celu oraz odchylenie standardowe wewnątrz populacji od kolejnej iteracji.*
 
 #### Komentarz do wyników:
 
-1. **Kluczowa rola podwyższonego prawdopodobieństwa mutacji ($p_m = 0.30$):** Porównanie mutacji jednopunktowej dla $p_m = 0.30$ (średnia $24.70$) oraz $p_m = 0.05$ (średnia $34.29$) jednoznacznie wskazuje, że na silnie wielomodalnej funkcji Rastrigin niska mutacja prowadzi do zjawiska **przedwczesnej zbieżności (*premature convergence*)**. Populacja zbyt wcześnie traci zmienność genetyczną i grzęźnie w lokalnych minimach. Wartość wykładowa $p_m = 0.30$ (na poziomie osobnika) zapewnia stałą eksplorację i ucieczkę z płytkich pułapek, a strategia elitarna ($10\%$) chroni dotychczas odnalezione minima przed degradacją.
+1. **Kluczowa rola podwyższonego prawdopodobieństwa mutacji ($p_m = 0.30$):** Porównanie mutacji jednopunktowej dla $p_m = 0.30$ (średnia $24.70$) oraz $p_m = 0.05$ (średnia $34.29$) jednoznacznie wskazuje, że na funkcji Rastrigin niska mutacja prowadzi do utknięcia w lokalnych minimach.
 
 2. **Porównanie mutacji jedno- i dwupunktowej:** Mutacja dwupunktowa odnotowała **najlepszy pojedynczy wynik w całym eksperymencie ($18.22$)**, jednak mutacja jednopunktowa charakteryzowała się **najwyższą stabilnością** (najniższe odchylenie standardowe serii $\sigma = 4.72$ oraz najniższa średnia $24.70$). Odwrócenie dwóch bitów jednocześnie generuje silniejszą perturbację, co sprzyja okazjonalnym dalekim przeskokom, lecz nieco częściej niszczy dopasowane podciągi bitów.
 
-3. **Nieskuteczność mutacji brzegowej:** Mutacja brzegowa okazała się zdecydowanie najsłabsza (średnia aż $41.97$, najgorszy wynik $63.61$, odchylenie $\sigma = 10.46$). Modyfikując wyłącznie pierwszy lub ostatni bit w całym $320$-bitowym chromosomie, operator zmieniał wyłącznie skrajne współrzędne ($x_1$ lub $x_{20}$), pozostawiając pozostałe $18$ zmiennych decyzyjnych bez bezpośredniej mutacji. W efekcie eksploracja przestrzeni była drastycznie ograniczona.
+3. **Nieskuteczność mutacji brzegowej:** Mutacja brzegowa okazała się zdecydowanie najsłabsza (średnia aż $41.97$, najgorszy wynik $63.61$, odchylenie $\sigma = 10.46$). Modyfikując wyłącznie pierwszy lub ostatni bit w całym $320$-bitowym chromosomie, operator zmieniał wyłącznie skrajne współrzędne, pozostawiając pozostałe $18$ zmiennych decyzyjnych bez bezpośredniej mutacji. W efekcie eksploracja przestrzeni była drastycznie ograniczona.
 
 ---
 
-### 6.3. Eksperyment 3: Wpływ metody selekcji i parametrów
+### 5.3. Eksperyment 3: Wpływ metody selekcji i parametrów
 
 * **Stałe parametry:** Funkcja: Rastrigin, $N = 20$, Populacja = 80, Epoki = 100, Dokładność bitowa = 16 bitów, Krzyżowanie: Dwupunktowe ($p_c = 0.8$), Mutacja: Jednopunktowa ($p_m = 0.3$), Inwersja ($p_i = 0.3$), Elitaryzm = 10%.
 
@@ -239,17 +195,13 @@ Zgodnie z wymaganiem z punktu 11f, **wykresy zbieżności (Wykres 9a oraz Wykres
 
 #### Komentarz do wyników:
 
-1. **Selekcja Najlepszych (pula 10% vs 50%):** Ograniczenie puli rodzicielskiej do ścisłej czołówki $10\%$ populacji (jedynie $8$ osobników) zaowocowało **najlepszym pojedynczym wynikiem w całym badaniu selekcji ($14.225139$)**. Bardzo wysoka presja selekcyjna pozwala na agresywną eksploatację obiecującego dołka. Z drugiej strony, średnia tej serii ($27.69$) była gorsza niż dla puli $50\%$ ($25.83$), a odchylenie standardowe wzrosło ($\sigma = 6.60$). Wynika to ze zjawiska wąskiego gardła genetycznego (*genetic bottleneck*) – gdy wąska elita ugrzęźnie w lokalnym minimum, brak różnorodności uniemożliwia wyjście, co potwierdza, że pula $50\%$ oferuje znacznie bezpieczniejszą i stabilniejszą ewolucję.
+1. **Selekcja Najlepszych (pula 10% vs 50%):** Ograniczenie puli rodzicielskiej do ścisłej czołówki $10\%$ populacji (jedynie $8$ osobników) zaowocowało **najlepszym pojedynczym wynikiem w całym badaniu selekcji ($14.225139$)**. Bardzo wysoka presja selekcyjna pozwala na agresywną eksploatację obiecującego dołka. Z drugiej strony, średnia tej serii ($27.69$) była gorsza niż dla puli $50\%$ ($25.83$), a odchylenie standardowe wzrosło ($\sigma = 6.60$). Wynika to ze zjawiska wąskiego gardła genetycznego – gdy wąska elita ugrzęźnie w lokalnym minimum, brak różnorodności uniemożliwia wyjście, co potwierdza, że pula $50\%$ oferuje znacznie bezpieczniejszą i stabilniejszą ewolucję.
 
-2. **Optymalny rozmiar turnieju ($k = 3$):** Selekcja turniejowa z $k = 3$ okazała się najbardziej stabilną metodą selekcji (najniższe odchylenie $\sigma = 4.71$ i najniższy błąd najgorszego przypadku $33.97$). Zwiększenie presji do $k = 7$ pogorszyło średnią do $28.28$ (zbyt szybka eliminacja podpopulacji), natomiast $k = 2$ okazało się zbyt łagodne (średnia $29.33$, zjawisko dryfu genetycznego).
-
-3. **Wady selekcji ruletkowej:** Koło ruletki wypadło najsłabiej z metod ukierunkowanych na zbieżność (średnia $40.75$, $\sigma = 8.09$). Wymóg transformacji przystosowania dla zadań minimalizacji oraz wysoki błąd stochastyczny losowania powodują rozpraszanie wysiłku ewolucyjnego w 20-wymiarowej przestrzeni.
-
-4. **Selekcja najgorszych jako test kontrolny (*sanity check*):** Odnotowany wynik na poziomie $254.27$ dowodzi pełnej poprawności implementacji – selekcja najsłabszych osobników prowadzi do skrajnej degeneracji, co jednoznacznie dowodzi, że to właściwa presja selekcyjna steruje zbieżnością AG.
+2. **Optymalny rozmiar turnieju ($k = 3$):** Selekcja turniejowa z $k = 3$ okazała się najbardziej stabilną metodą selekcji (najniższe odchylenie $\sigma = 4.71$ i najniższy błąd najgorszego przypadku $33.97$). Zwiększenie presji do $k = 7$ pogorszyło średnią do $28.28$, natomiast $k = 2$ okazało się zbyt łagodne (średnia $29.33$).
 
 ---
 
-### 6.4. Eksperyment 4: Skalowalność wymiaru $N$ i trudna funkcja CEC 2014 F2
+### 5.4. Eksperyment 4: Skalowalność wymiaru $N$ i trudna funkcja CEC 2014 F2
 W tym eksperymencie porównano zachowanie algorytmu przy rosnącej liczbie zmiennych ($N = 10, 20, 30$) dla funkcji wielomodalnej (*Rastrigin*) oraz trudnej funkcji z zawodów (*CEC2014 F2: Rotated Bent Cigar*).
 
 * **Parametry algorytmu:** Populacja = 200, Epoki = 1000, Dokładność bitowa = 20 bitów (krok kwantyzacji $\approx 0.00019$), Krzyżowanie: Dwupunktowe ($p_c = 0.80$), Mutacja: Jednopunktowa ($p_m = 0.30$), Inwersja ($p_i = 0.30$), Selekcja: Turniejowa ($k = 3$), Elitaryzm = 10% (20 osobników).
@@ -269,27 +221,27 @@ W tym eksperymencie porównano zachowanie algorytmu przy rosnącej liczbie zmien
 | **$N = 30$** | 600 bitów | $1.39 \cdot 10^8$ | **30 409 000.78** | $3.10 \cdot 10^8$ | $8.41 \cdot 10^8$ | 15.26 s |
 
 #### Wykresy zbieżności dla CEC2014 F2 ($N=10$, najlepsze uruchomienie, $f_{\min} = 4958.59$):
-![Wykres 9a - CEC2014](images/cec_best_plot9a.png)  
+![Wykres wartości funkcji celu - CEC2014](images/cec_best_plot9a.png)  
 *Rysunek 5: Wartość funkcji celu od iteracji dla funkcji CEC2014 F2 ($N=10$) dla najlepszego uruchomienia w serii (linia ciągła czerwona) wraz z 9 pozostałymi próbami (linie przerywane szare).*
 
-![Wykres 9b - CEC2014](images/cec_best_plot9b.png)  
+![Wykres średniej i odchylenia - CEC2014](images/cec_best_plot9b.png)  
 *Rysunek 6: Średnia wartość funkcji oraz odchylenie standardowe wewnątrz populacji od iteracji dla funkcji CEC2014 F2.*
 
 #### Komentarz do wyników Eksperymentu 4:
 
 1. **Doskonała zbieżność na funkcji Rastrigin:** Zastosowanie budżetu $1000$ epok, populacji $200$ oraz dokładności $20$ bitów pozwoliło algorytmowi genetycznemu odnaleźć **dokładne minimum globalne ($f^* = 0.0$)** dla wszystkich testowanych wymiarów ($N=10, 20, 30$). Błędy bezwzględne najlepszych osobników wyniosły odpowiednio $4.73 \cdot 10^{-8}$, $9.46 \cdot 10^{-8}$ oraz $1.42 \cdot 10^{-7}$. W wymiarze $N=10$ każde z 10 powtórzeń zakończyło się idealnym trafieniem ($\sigma = 0.0$).
 
-2. **Analiza zbieżności na trudnej funkcji CEC2014 F2:** Funkcja Rotated Bent Cigar stanowiła ogromne wyzwanie ze względu na współczynnik kary $10^6$ oraz losową macierz obrotu $M$, która całkowicie znosi separowalność zmiennych. Mimo to, w wymiarze $N=10$ algorytm zredukował wartość funkcji z początkowych miliardów do poziomu **$4\,958.59$** (błąd bezwzględny $\approx 4758$). Przy mnożniku kary $10^6$, błąd ten oznacza sumę kwadratów odchyleń $\sum_{i=2}^{10} z_i^2 \approx 0.004758$, czyli średnią odległość od grani w 9 wymiarach rzędu zaledwie $\approx 0.023$ w dziedzinie $[-100, 100]$ ($0.01\%$ szerokości przedziału). W wyższych wymiarach ($N=20, 30$) liczba kierunków podlegających karze $10^6$ rośnie odpowiednio do 19 i 29, a liczba elementów macierzy obrotu do $900$, co demonstruje klasyczny efekt **przekleństwa wymiarowości (*curse of dimensionality*)**.
+2. **Analiza zbieżności na trudnej funkcji CEC2014 F2:** Funkcja Rotated Bent Cigar stanowiła ogromne wyzwanie ze względu na współczynnik kary $10^6$. Mimo to, w wymiarze $N=10$ algorytm zredukował wartość funkcji z początkowych miliardów do poziomu **4 958.59** (błąd bezwzględny $\approx 4758$). W wyższych wymiarach ($N=20, 30$) liczba kierunków podlegających karze $10^6$ rośnie odpowiednio do 19 i 29.
 
-3. **Skalowalność czasowa:** Czas pojedynczego przebiegu rósł ściśle liniowo w funkcji wymiaru $N$ (od $5.6\text{ s}$ do $12.5\text{ s}$ dla Rastrigina oraz od $7.6\text{ s}$ do $15.3\text{ s}$ dla Bent Cigar). Nieznacznie wyższy czas dla CEC2014 wynika z konieczności wykonywania mnożenia macierzowego $M \cdot x$ przy każdej ewaluacji osobnika.
+3. **Skalowalność czasowa:** Czas pojedynczego przebiegu rósł ściśle liniowo w funkcji wymiaru $N$ (od $5.6\text{ s}$ do $12.5\text{ s}$ dla Rastrigina oraz od $7.6\text{ s}$ do $15.3\text{ s}$ dla Bent Cigar).
 
 ---
 
 <div style="page-break-before: always;"></div>
 
-## 7. Podsumowanie i tabela końcowa (Pkt 11g)
+## 6. Podsumowanie i tabela końcowa
 
-Poniższa tabela stanowi zbiorcze podsumowanie osiągniętych rezultatów dla obu badanych funkcji testowych w wymiarach $N \in \{10, 20, 30\}$, zgodnie z wymogami punktu 11g wytycznych laboratoryjnych.
+Poniższa tabela stanowi zbiorcze podsumowanie osiągniętych rezultatów dla obu badanych funkcji testowych w wymiarach $N \in \{10, 20, 30\}$.
 
 | Nazwa optymalizowanej funkcji | Liczba zmiennych ($N$) | Rzeczywista wartość optimum ($f^*$) | Wartość optimum z algorytmu genetycznego ($f_{AG}$) | Błąd bezwzględny ($\|f^* - f_{AG}\|$) |
 | :--- | :---: | :---: | :---: | :---: |
@@ -302,20 +254,15 @@ Poniższa tabela stanowi zbiorcze podsumowanie osiągniętych rezultatów dla ob
 
 ---
 
-## 8. Wnioski końcowe
+## 7. Wnioski końcowe
 
 1. **Skuteczność algorytmu genetycznego na funkcji wielomodalnej (Rastrigin):**  
-   Klasyczny algorytm genetyczny z binarną reprezentacją chromosomu osiągnął pełny sukces na silnie wielomodalnej funkcji Rastrigin we wszystkich badanych wymiarach ($N = 10, 20, 30$, długość chromosomu do $600$ bitów). Zastosowanie podwyższonego prawdopodobieństwa mutacji ($p_m = 0.30$) i inwersji ($p_i = 0.30$) zapobiegło utknięciu populacji w lokalnych minimach kratownicy, a strategia elitarna pozwoliła na monotoniczne doprecyzowywanie współrzędnych aż do osiągnięcia błędu rzędu $10^{-8}$.
+   Klasyczny algorytm genetyczny z binarną reprezentacją chromosomu osiągnął pełny sukces na funkcji Rastrigin we wszystkich badanych wymiarach ($N = 10, 20, 30$, długość chromosomu do $600$ bitów).
 
-2. **Złożoność funkcji obróconych i źle uwarunkowanych (CEC2014 F2):**  
-   Funkcja Rotated Bent Cigar wykazała kluczowe wyzwania optymalizacji ewolucyjnej: ekstremalne uwarunkowanie (współczynnik $10^6$) tworzące wąską grań oraz macierz obrotu $M$, która uniemożliwia optymalizację zmiennych w sposób rozłączny. Zejście do poziomu błędu $4758$ w $N=10$ oznacza trafienie w odległość zaledwie $0.023$ od osi grani w 9-wymiarowej podprzestrzeni, co jest bardzo wysoką dokładnością jak na dyskretną binarną reprezentację.
+2. **Funkcja Rotated Bent Cigar:**  
+Test na funkcji Rotated Bent Cigar pokazał trudności w działaniu algorytmu. Funkcja ta tworzy bardzo wąską i stromą „grań”. Osiągnięcie błędu na poziomie $4758$ jest pewnego rodzaju sukcesem przy zastosowaniu danej metody. 
 
 3. **Wpływ operatorów genetycznych:**
-    * **Krzyżowanie:** Najwyższą jakość rozwiązań uzyskano przy użyciu krzyżowania ziarnistego (dla funkcji separowalnych) oraz dwupunktowego (dla funkcji ze skorelowanymi zmiennymi). Krzyżowanie jednorodne okazało się destrukcyjne dla spójności bloków bitowych liczb rzeczywistych.
-    * **Mutacja i inwersja:** Wartość wykładowa prawdopodobieństwa mutacji $p_m = 0.30$ oraz inwersji $p_i = 0.30$ (dla mutacji na poziomie osobnika) okazała się niezbędna do ochrony populacji przed przedwczesną zbieżnością (*premature convergence*), z którą borykała się niska mutacja $p_m = 0.05$. Mutacja brzegowa okazała się całkowicie nieprzydatna w przestrzeniach wielowymiarowych.
+    * **Krzyżowanie:** Najwyższą jakość rozwiązań uzyskano przy użyciu krzyżowania ziarnistego oraz dwupunktowego. Krzyżowanie jednorodne okazało się destrukcyjne dla kolejnych generacji.
+    * **Mutacja i inwersja:** Wartość wykładowa prawdopodobieństwa mutacji $p_m = 0.30$ oraz inwersji $p_i = 0.30$ okazała się niezbędna do ochrony populacji przed przedwczesną zbieżnością, z którą borykała się niska mutacja $p_m = 0.05$. Mutacja brzegowa wykazała się niską skutecznością.
     * **Selekcja:** Selekcja turniejowa ($k = 3$) oraz selekcja obcięta (najlepszych $50\%$) zapewniły optymalny kompromis pomiędzy presją selekcyjną a zachowaniem różnorodności. Koło ruletki wykazało wysoką podatność na błąd stochastyczny i wolniejszą zbieżność, a próba kontrolna z selekcją najgorszych potwierdziła poprawność sterowania ewolucją.
-    * **Strategia elitarna:** Elitaryzm na poziomie $10\%$ populacji był czynnikiem krytycznym chroniącym znalezione rozwiązania przed przypadkowym zniszczeniem przez mutację.
-
-4. **Złożoność obliczeniowa i skalowalność:**  
-   Czas wykonania rósł ściśle proporcjonalnie do liczby epok, wielkości populacji oraz wymiaru $N$, osiągając maksymalnie ok. $15$ sekund na 1000 epok przy $N=30$. Cała aplikacja wykazała pełną stabilność numeryczną, a zaimplementowane mechanizmy eksportu (CSV/JSON oraz automatyczny zapis wykresów PNG z wielokrotnymi próbami) umożliwiły płynne przeprowadzenie i udokumentowanie pełnego cyklu badawczego.
-

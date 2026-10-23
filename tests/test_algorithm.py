@@ -13,7 +13,7 @@ from engine.selection import Selection
 
 class TestGeneticAlgorithmProject(unittest.TestCase):
     def test_variable_dimensions_5_10_20_27(self):
-        """Pkt 2 i 4a: Dowolna liczba zmiennych (5, 10, 20, 27) oraz dokładność bitowa i dziesiętna."""
+        """Dowolna liczba zmiennych (5, 10, 20, 27) oraz dokładność bitowa i dziesiętna."""
         spec = FunctionRegistry.get_by_name("bf_hypersphere")
         for n_vars in (5, 10, 20, 27):
             ga = GeneticAlgorithm(
@@ -35,7 +35,7 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
         self.assertEqual(ch.bit_precision, 18)  # ceil(log2(20 * 10^4 + 1)) = 18
 
     def test_selection_methods(self):
-        """Pkt 4d: Selekcja najlepszych, najgorszych, ruletki i turniejowa + parametry."""
+        """Selekcja najlepszych, najgorszych, ruletki i turniejowa + parametry."""
         spec = FunctionRegistry.get_by_name("bf_rastrigin")
         for sel_method, param in [
             (Selection.best, 0.4),
@@ -56,7 +56,7 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
             self.assertEqual(len(history), 5)
 
     def test_crossover_methods(self):
-        """Pkt 4e: Krzyżowanie jednopunktowe, dwupunktowe, jednorodne, ziarniste."""
+        """Krzyżowanie jednopunktowe, dwupunktowe, jednorodne, ziarniste."""
         p1 = Chromosome(4, 8, (-5, 5), genes=[0] * 32)
         p2 = Chromosome(4, 8, (-5, 5), genes=[1] * 32)
 
@@ -77,7 +77,7 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
                 self.assertEqual(b1 + b2, 1, f"Błąd wymiany bitów w metodzie {method.__name__}")
 
     def test_mutation_and_inversion(self):
-        """Pkt 4f i 4g: Mutacja brzegowa, jedno- i dwupunktowa oraz operator inwersji."""
+        """Mutacja brzegowa, jedno- i dwupunktowa oraz operator inwersji."""
         ch_edge = Chromosome(2, 8, (-5, 5), genes=[0] * 16)
         Mutation.edge_mutation(ch_edge, 1.0)
         self.assertEqual(sum(ch_edge.genes), 1)
@@ -96,7 +96,7 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
         self.assertEqual(sorted(ch_inv.genes), list(range(16)))
 
     def test_elitism_and_min_max_and_exports(self):
-        """Pkt 2, 4h, 8, 9, 10: Maksymalizacja/minimalizacja, elita liczbowo/%, historia, eksport CSV/JSON."""
+        """Maksymalizacja/minimalizacja, elita liczbowo/%, historia, eksport CSV/JSON."""
         # Funkcja z maksimum w (0, 0) równym 10.0: f(x) = 10 - sum(x_i^2)
         ga = GeneticAlgorithm(
             pop_size=30,
@@ -121,7 +121,7 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
             self.assertTrue(json_file.exists() and json_file.stat().st_size > 0)
 
     def test_all_registered_functions(self):
-        """Pkt 5: Wszystkie funkcje w rejestrze (FunkcjeTestowe oraz CEC2014) dla różnych wymiarów."""
+        """Wszystkie funkcje w rejestrze (FunkcjeTestowe oraz CEC2014) dla różnych wymiarów."""
         for spec in FunctionRegistry.get_all():
             for dim in (5, 10, 27):
                 fn = spec.create_evaluator(dim)

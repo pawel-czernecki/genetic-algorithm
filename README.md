@@ -13,7 +13,7 @@ Projekt realizowany w ramach przedmiotu **Obliczenia Ewolucyjne**. Aplikacja imp
   - `algorithm.py` – klasa `GeneticAlgorithm` (główna pętla ewolucyjna, elitaryzm % lub liczbowy, pomiar czasu, statystyki epok, zapis do CSV i JSON)
   - `functions.py` – klasy `BenchmarkFunctionSpec` oraz `FunctionRegistry` wykorzystujące funkcje z bibliotek `benchmark_functions` oraz `opfunu` (`CEC2014`)
 - `gui/`
-  - `app.py` – klasa `GeneticAlgorithmGUI` (interfejs graficzny, pełna konfiguracja parametrów, wykresy 9a i 9b, tabela iteracji, tryb 10 uruchomień do sprawozdania, eksport CSV/JSON/PNG)
+  - `app.py` – klasa `GeneticAlgorithmGUI` (interfejs graficzny, pełna konfiguracja parametrów, wykresy przebiegu ewolucji, tabela iteracji, tryb wielokrotnych uruchomień ze statystykami serii, eksport CSV/JSON/PNG)
 - `tests/`
   - `test_algorithm.py` – testy jednostkowe weryfikujące wszystkie komponenty algorytmu
 

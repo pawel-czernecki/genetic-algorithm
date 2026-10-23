@@ -95,7 +95,7 @@ class GeneticAlgorithmGUI:
         self.var_res_epochs = tk.StringVar(value="—")
         self.var_res_fx = tk.StringVar(value="—")
         self.var_res_opt_err = tk.StringVar(value="—")
-        self.var_res_stats = tk.StringVar(value="Pojedyncze uruchomienie (ustaw 10 powtórzeń dla statystyk do sprawozdania)")
+        self.var_res_stats = tk.StringVar(value="Pojedyncze uruchomienie (zwiększ liczbę powtórzeń dla statystyk serii)")
 
     def _build_layout(self):
         style = ttk.Style(self.root)
@@ -392,9 +392,9 @@ class GeneticAlgorithmGUI:
         self.tab_plot_best = ttk.Frame(self.notebook)
         self.tab_plot_stats = ttk.Frame(self.notebook)
         self.tab_table = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_plot_best, text="Wykres 9a: Wartość funkcji celu")
-        self.notebook.add(self.tab_plot_stats, text="Wykres 9b: Średnia i odchylenie std")
-        self.notebook.add(self.tab_table, text="Tabela kolejnych iteracji (pkt 10)")
+        self.notebook.add(self.tab_plot_best, text="Wykres: Wartość funkcji celu")
+        self.notebook.add(self.tab_plot_stats, text="Wykres: Średnia i odchylenie std")
+        self.notebook.add(self.tab_table, text="Tabela kolejnych iteracji")
 
         self._build_plot_best_area(self.tab_plot_best)
         self._build_plot_stats_area(self.tab_plot_stats)
@@ -405,7 +405,7 @@ class GeneticAlgorithmGUI:
         top_bar.pack(fill=tk.X, padx=6, pady=4)
         ttk.Label(
             top_bar,
-            text="Wykres 9a: Zależność wartości funkcji celu od kolejnej iteracji",
+            text="Zależność wartości funkcji celu od kolejnej iteracji",
             font=("TkDefaultFont", 9, "bold"),
         ).pack(side=tk.LEFT)
 
@@ -426,7 +426,7 @@ class GeneticAlgorithmGUI:
         top_bar.pack(fill=tk.X, padx=6, pady=4)
         ttk.Label(
             top_bar,
-            text="Wykres 9b: Średnia wartość funkcji celu oraz odchylenie standardowe od kolejnej iteracji",
+            text="Średnia wartość funkcji celu oraz odchylenie standardowe od kolejnej iteracji",
             font=("TkDefaultFont", 9, "bold"),
         ).pack(side=tk.LEFT)
 
@@ -706,12 +706,12 @@ class GeneticAlgorithmGUI:
         # Automatyczny zapis wykresów (jeśli zaznaczono checkbox)
         if self.var_auto_save_charts.get() and best_ga is not None and best_ga.history:
             ts = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
-            chart_9a = self.results_dir / f"wykres_9a_{spec.key}_N{best_ga.num_variables}_{ts}.png"
-            chart_9b = self.results_dir / f"wykres_9b_{spec.key}_N{best_ga.num_variables}_{ts}.png"
+            chart_best = self.results_dir / f"wykres_funkcji_{spec.key}_N{best_ga.num_variables}_{ts}.png"
+            chart_stats = self.results_dir / f"wykres_statystyk_{spec.key}_N{best_ga.num_variables}_{ts}.png"
             try:
-                self.figure_best.savefig(chart_9a, dpi=180, bbox_inches="tight")
-                self.figure_stats.savefig(chart_9b, dpi=180, bbox_inches="tight")
-                saved_files.extend([chart_9a.name, chart_9b.name])
+                self.figure_best.savefig(chart_best, dpi=180, bbox_inches="tight")
+                self.figure_stats.savefig(chart_stats, dpi=180, bbox_inches="tight")
+                saved_files.extend([chart_best.name, chart_stats.name])
             except Exception as exc:
                 print(f"Błąd zapisu wykresów: {exc}")
 
@@ -761,7 +761,7 @@ class GeneticAlgorithmGUI:
         mean_vals = [h["mean_fitness"] for h in history]
         std_vals = [h["std_fitness"] for h in history]
 
-        # Wykres 9a: Wartość funkcji od kolejnej iteracji (Pkt 9a wytycznych)
+        # Wykres zależności wartości funkcji celu od kolejnej iteracji
         self.ax_best.clear()
 
         has_multiple_runs = runs_results is not None and len(runs_results) > 1
@@ -805,7 +805,7 @@ class GeneticAlgorithmGUI:
                 linewidth=2.0,
             )
 
-        self.ax_best.set_title(f"a) Wartość funkcji celu od kolejnej iteracji\n({func_name}, N={num_vars})", fontsize=10)
+        self.ax_best.set_title(f"Wartość funkcji celu od kolejnej iteracji\n({func_name}, N={num_vars})", fontsize=10)
         self.ax_best.set_xlabel("Iteracja (Epoka)")
         self.ax_best.set_ylabel("Wartość funkcji celu f(x)")
         self.ax_best.grid(True, linestyle="--", alpha=0.5)
@@ -813,14 +813,14 @@ class GeneticAlgorithmGUI:
         self.figure_best.tight_layout(pad=2.5)
         self.canvas_best.draw()
 
-        # Wykres 9b: Średnia wartość funkcji i odchylenie standardowe od kolejnej iteracji
+        # Wykres średniej wartości funkcji i odchylenia standardowego od kolejnej iteracji
         self.ax_stats.clear()
         self.ax_stats.plot(epochs, mean_vals, label="Średnia wartość funkcji", color="#2ca02c", linewidth=1.8)
         self.ax_stats.plot(epochs, std_vals, label="Odchylenie standardowe", color="#ff7f0e", linewidth=1.5, linestyle="--")
         lower = [m - s for m, s in zip(mean_vals, std_vals)]
         upper = [m + s for m, s in zip(mean_vals, std_vals)]
         self.ax_stats.fill_between(epochs, lower, upper, color="#2ca02c", alpha=0.15, label="Średnia ± odch. std")
-        self.ax_stats.set_title(f"b) Średnia wartość funkcji i odchylenie standardowe od iteracji\n({func_name}, N={num_vars})", fontsize=10)
+        self.ax_stats.set_title(f"Średnia wartość funkcji i odchylenie standardowe od iteracji\n({func_name}, N={num_vars})", fontsize=10)
         self.ax_stats.set_xlabel("Iteracja (Epoka)")
         self.ax_stats.set_ylabel("Wartość")
         self.ax_stats.grid(True, linestyle="--", alpha=0.5)

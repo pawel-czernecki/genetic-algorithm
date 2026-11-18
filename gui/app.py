@@ -27,22 +27,38 @@ class GeneticAlgorithmGUI:
         "Koło ruletki (Roulette)": Selection.roulette,
     }
 
-    CROSSOVER_MAP = {
+    REAL_CROSSOVER_MAP = {
+        "Arytmetyczne (Arithmetic)": Crossover.arithmetic_crossover,
+        "Linearne (Linear)": Crossover.linear_crossover,
+        "Mieszające typu alfa (BLX-α)": Crossover.blx_alpha,
+        "Mieszające typu alfa i beta (BLX-αβ)": Crossover.blx_alpha_beta,
+        "Uśredniające (Average)": Crossover.average_crossover,
+    }
+
+    BINARY_CROSSOVER_MAP = {
         "Jednopunktowe (One-point)": Crossover.onepoint_crossover,
         "Dwupunktowe (Two-point)": Crossover.twopoint_crossover,
         "Jednorodne (Uniform)": Crossover.uniform_crossover,
         "Ziarniste (Granular)": Crossover.granular,
     }
 
-    MUTATION_MAP = {
+    REAL_MUTATION_MAP = {
+        "Równomierna (Uniform)": Mutation.uniform_mutation,
+        "Gaussa (Gaussian)": Mutation.gaussian_mutation,
+    }
+
+    BINARY_MUTATION_MAP = {
         "Jednopunktowa (One-point)": Mutation.onepoint_mutation,
         "Dwupunktowa (Two-point)": Mutation.twopoint_mutation,
         "Brzegowa (Edge)": Mutation.edge_mutation,
     }
 
+    CROSSOVER_MAP = {**REAL_CROSSOVER_MAP, **BINARY_CROSSOVER_MAP}
+    MUTATION_MAP = {**REAL_MUTATION_MAP, **BINARY_MUTATION_MAP}
+
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Projekt 1 – Klasyczny Algorytm Genetyczny (Obliczenia Ewolucyjne)")
+        self.root.title("Projekt 2 – Algorytm Genetyczny (Reprezentacja rzeczywista i binarna)")
         self.root.geometry("1360x860")
         self.root.minsize(1120, 740)
 
@@ -56,6 +72,7 @@ class GeneticAlgorithmGUI:
         self._build_layout()
         self._on_function_change()
         self._on_selection_change()
+        self._on_representation_change()
 
     def _init_variables(self):
         functions = FunctionRegistry.get_all()
@@ -65,6 +82,7 @@ class GeneticAlgorithmGUI:
         self.var_bound_min = tk.DoubleVar(value=functions[0].default_bounds[0])
         self.var_bound_max = tk.DoubleVar(value=functions[0].default_bounds[1])
 
+        self.var_representation = tk.StringVar(value="real")
         self.var_precision_mode = tk.StringVar(value="bits")
         self.var_bit_precision = tk.IntVar(value=16)
         self.var_decimal_precision = tk.IntVar(value=4)
@@ -76,11 +94,14 @@ class GeneticAlgorithmGUI:
         self.var_selection = tk.StringVar(value="Turniejowa (Tournament)")
         self.var_selection_param = tk.DoubleVar(value=3.0)
 
-        self.var_crossover = tk.StringVar(value="Dwupunktowe (Two-point)")
+        self.var_crossover = tk.StringVar(value="Mieszające typu alfa (BLX-α)")
         self.var_cross_prob = tk.DoubleVar(value=0.8)
+        self.var_alpha = tk.DoubleVar(value=0.5)
+        self.var_beta = tk.DoubleVar(value=0.25)
 
-        self.var_mutation = tk.StringVar(value="Jednopunktowa (One-point)")
+        self.var_mutation = tk.StringVar(value="Gaussa (Gaussian)")
         self.var_mut_prob = tk.DoubleVar(value=0.3)
+        self.var_sigma = tk.DoubleVar(value=0.5)
 
         self.var_inv_prob = tk.DoubleVar(value=0.3)
 
@@ -182,30 +203,52 @@ class GeneticAlgorithmGUI:
         func_frame.columnconfigure(1, weight=1)
 
         # Sekcja 2: Chromosom i populacja
-        pop_frame = ttk.LabelFrame(parent, text="2. Reprezentacja binarna i populacja", padding=6)
+        pop_frame = ttk.LabelFrame(parent, text="2. Reprezentacja chromosomu i populacja", padding=6)
         pop_frame.pack(fill=tk.X, pady=(0, 4))
 
+        ttk.Label(pop_frame, text="Typ reprezentacji:").grid(row=0, column=0, sticky=tk.W, pady=1)
+        rep_sub = ttk.Frame(pop_frame)
+        rep_sub.grid(row=0, column=1, sticky=tk.W)
         ttk.Radiobutton(
+            rep_sub,
+            text="Rzeczywista",
+            variable=self.var_representation,
+            value="real",
+            command=self._on_representation_change,
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Radiobutton(
+            rep_sub,
+            text="Binarna",
+            variable=self.var_representation,
+            value="binary",
+            command=self._on_representation_change,
+        ).pack(side=tk.LEFT)
+
+        self.rb_prec_bits = ttk.Radiobutton(
             pop_frame,
             text="Liczba bitów na zmienną:",
             variable=self.var_precision_mode,
             value="bits",
-        ).grid(row=0, column=0, sticky=tk.W, pady=1)
-        ttk.Spinbox(pop_frame, from_=2, to=64, textvariable=self.var_bit_precision, width=10).grid(row=0, column=1, sticky=tk.W, pady=1)
+        )
+        self.rb_prec_bits.grid(row=1, column=0, sticky=tk.W, pady=1)
+        self.sp_bit_prec = ttk.Spinbox(pop_frame, from_=2, to=64, textvariable=self.var_bit_precision, width=10)
+        self.sp_bit_prec.grid(row=1, column=1, sticky=tk.W, pady=1)
 
-        ttk.Radiobutton(
+        self.rb_prec_dec = ttk.Radiobutton(
             pop_frame,
             text="Dokładność dziesiętna d (10^-d):",
             variable=self.var_precision_mode,
             value="decimal",
-        ).grid(row=1, column=0, sticky=tk.W, pady=1)
-        ttk.Spinbox(pop_frame, from_=1, to=12, textvariable=self.var_decimal_precision, width=10).grid(row=1, column=1, sticky=tk.W, pady=1)
+        )
+        self.rb_prec_dec.grid(row=2, column=0, sticky=tk.W, pady=1)
+        self.sp_dec_prec = ttk.Spinbox(pop_frame, from_=1, to=12, textvariable=self.var_decimal_precision, width=10)
+        self.sp_dec_prec.grid(row=2, column=1, sticky=tk.W, pady=1)
 
-        ttk.Label(pop_frame, text="Wielkość populacji:").grid(row=2, column=0, sticky=tk.W, pady=1)
-        ttk.Spinbox(pop_frame, from_=4, to=5000, increment=10, textvariable=self.var_pop_size, width=10).grid(row=2, column=1, sticky=tk.W, pady=1)
+        ttk.Label(pop_frame, text="Wielkość populacji:").grid(row=3, column=0, sticky=tk.W, pady=1)
+        ttk.Spinbox(pop_frame, from_=4, to=5000, increment=10, textvariable=self.var_pop_size, width=10).grid(row=3, column=1, sticky=tk.W, pady=1)
 
-        ttk.Label(pop_frame, text="Liczba epok (iteracji):").grid(row=3, column=0, sticky=tk.W, pady=1)
-        ttk.Spinbox(pop_frame, from_=1, to=10000, increment=50, textvariable=self.var_epochs, width=10).grid(row=3, column=1, sticky=tk.W, pady=1)
+        ttk.Label(pop_frame, text="Liczba epok (iteracji):").grid(row=4, column=0, sticky=tk.W, pady=1)
+        ttk.Spinbox(pop_frame, from_=1, to=10000, increment=50, textvariable=self.var_epochs, width=10).grid(row=4, column=1, sticky=tk.W, pady=1)
 
         # Sekcja 3: Operatory genetyczne
         op_frame = ttk.LabelFrame(parent, text="3. Selekcja, krzyżowanie, mutacja, inwersja", padding=6)
@@ -217,7 +260,7 @@ class GeneticAlgorithmGUI:
             textvariable=self.var_selection,
             values=list(self.SELECTION_MAP.keys()),
             state="readonly",
-            width=25,
+            width=28,
         )
         cb_sel.grid(row=0, column=1, sticky=tk.EW, pady=1)
         cb_sel.bind("<<ComboboxSelected>>", lambda _e: self._on_selection_change())
@@ -228,31 +271,48 @@ class GeneticAlgorithmGUI:
         self.ent_sel_param.grid(row=1, column=1, sticky=tk.W, pady=1)
 
         ttk.Label(op_frame, text="Metoda krzyżowania:").grid(row=2, column=0, sticky=tk.W, pady=1)
-        ttk.Combobox(
+        self.cb_crossover = ttk.Combobox(
             op_frame,
             textvariable=self.var_crossover,
-            values=list(self.CROSSOVER_MAP.keys()),
+            values=list(self.REAL_CROSSOVER_MAP.keys()),
             state="readonly",
-            width=25,
-        ).grid(row=2, column=1, sticky=tk.EW, pady=1)
+            width=28,
+        )
+        self.cb_crossover.grid(row=2, column=1, sticky=tk.EW, pady=1)
+        self.cb_crossover.bind("<<ComboboxSelected>>", lambda _e: self._on_crossover_change())
 
         ttk.Label(op_frame, text="Prawdop. krzyżowania (p_c):").grid(row=3, column=0, sticky=tk.W, pady=1)
         ttk.Spinbox(op_frame, from_=0.0, to=1.0, increment=0.05, textvariable=self.var_cross_prob, width=10).grid(row=3, column=1, sticky=tk.W, pady=1)
 
-        ttk.Label(op_frame, text="Metoda mutacji:").grid(row=4, column=0, sticky=tk.W, pady=1)
-        ttk.Combobox(
+        ttk.Label(op_frame, text="Parametr α (BLX-α / BLX-αβ):").grid(row=4, column=0, sticky=tk.W, pady=1)
+        self.sp_alpha = ttk.Spinbox(op_frame, from_=0.0, to=5.0, increment=0.05, textvariable=self.var_alpha, width=10)
+        self.sp_alpha.grid(row=4, column=1, sticky=tk.W, pady=1)
+
+        ttk.Label(op_frame, text="Parametr β (BLX-αβ):").grid(row=5, column=0, sticky=tk.W, pady=1)
+        self.sp_beta = ttk.Spinbox(op_frame, from_=0.0, to=5.0, increment=0.05, textvariable=self.var_beta, width=10)
+        self.sp_beta.grid(row=5, column=1, sticky=tk.W, pady=1)
+
+        ttk.Label(op_frame, text="Metoda mutacji:").grid(row=6, column=0, sticky=tk.W, pady=1)
+        self.cb_mutation = ttk.Combobox(
             op_frame,
             textvariable=self.var_mutation,
-            values=list(self.MUTATION_MAP.keys()),
+            values=list(self.REAL_MUTATION_MAP.keys()),
             state="readonly",
-            width=25,
-        ).grid(row=4, column=1, sticky=tk.EW, pady=1)
+            width=28,
+        )
+        self.cb_mutation.grid(row=6, column=1, sticky=tk.EW, pady=1)
+        self.cb_mutation.bind("<<ComboboxSelected>>", lambda _e: self._on_mutation_change())
 
-        ttk.Label(op_frame, text="Prawdop. mutacji (p_m):").grid(row=5, column=0, sticky=tk.W, pady=1)
-        ttk.Spinbox(op_frame, from_=0.0, to=1.0, increment=0.01, textvariable=self.var_mut_prob, width=10).grid(row=5, column=1, sticky=tk.W, pady=1)
+        ttk.Label(op_frame, text="Prawdop. mutacji (p_m):").grid(row=7, column=0, sticky=tk.W, pady=1)
+        ttk.Spinbox(op_frame, from_=0.0, to=1.0, increment=0.01, textvariable=self.var_mut_prob, width=10).grid(row=7, column=1, sticky=tk.W, pady=1)
 
-        ttk.Label(op_frame, text="Prawdop. inwersji (p_i):").grid(row=6, column=0, sticky=tk.W, pady=1)
-        ttk.Spinbox(op_frame, from_=0.0, to=1.0, increment=0.01, textvariable=self.var_inv_prob, width=10).grid(row=6, column=1, sticky=tk.W, pady=1)
+        ttk.Label(op_frame, text="Odchylenie std Gaussa (σ):").grid(row=8, column=0, sticky=tk.W, pady=1)
+        self.sp_sigma = ttk.Spinbox(op_frame, from_=0.001, to=100.0, increment=0.05, textvariable=self.var_sigma, width=10)
+        self.sp_sigma.grid(row=8, column=1, sticky=tk.W, pady=1)
+
+        ttk.Label(op_frame, text="Prawdop. inwersji (p_i):").grid(row=9, column=0, sticky=tk.W, pady=1)
+        self.sp_inv_prob = ttk.Spinbox(op_frame, from_=0.0, to=1.0, increment=0.01, textvariable=self.var_inv_prob, width=10)
+        self.sp_inv_prob.grid(row=9, column=1, sticky=tk.W, pady=1)
 
         op_frame.columnconfigure(1, weight=1)
 
@@ -491,6 +551,49 @@ class GeneticAlgorithmGUI:
             if self.var_selection_param.get() >= 2.0:
                 self.var_selection_param.set(0.5)
 
+    def _on_representation_change(self):
+        rep = self.var_representation.get()
+        if rep == "real":
+            cross_values = list(self.REAL_CROSSOVER_MAP.keys())
+            mut_values = list(self.REAL_MUTATION_MAP.keys())
+            bin_state = tk.DISABLED
+        else:
+            cross_values = list(self.BINARY_CROSSOVER_MAP.keys())
+            mut_values = list(self.BINARY_MUTATION_MAP.keys())
+            bin_state = tk.NORMAL
+
+        self.cb_crossover.configure(values=cross_values)
+        if self.var_crossover.get() not in cross_values:
+            self.var_crossover.set(cross_values[0])
+
+        self.cb_mutation.configure(values=mut_values)
+        if self.var_mutation.get() not in mut_values:
+            self.var_mutation.set(mut_values[0])
+
+        for widget in (self.rb_prec_bits, self.sp_bit_prec, self.rb_prec_dec, self.sp_dec_prec, self.sp_inv_prob):
+            widget.configure(state=bin_state)
+
+        self._on_crossover_change()
+        self._on_mutation_change()
+
+    def _on_crossover_change(self):
+        if self.var_representation.get() != "real":
+            self.sp_alpha.configure(state=tk.DISABLED)
+            self.sp_beta.configure(state=tk.DISABLED)
+            return
+        cross_fn = self.CROSSOVER_MAP.get(self.var_crossover.get())
+        is_blx_alpha = cross_fn == Crossover.blx_alpha
+        is_blx_ab = cross_fn == Crossover.blx_alpha_beta
+        self.sp_alpha.configure(state=tk.NORMAL if (is_blx_alpha or is_blx_ab) else tk.DISABLED)
+        self.sp_beta.configure(state=tk.NORMAL if is_blx_ab else tk.DISABLED)
+
+    def _on_mutation_change(self):
+        if self.var_representation.get() != "real":
+            self.sp_sigma.configure(state=tk.DISABLED)
+            return
+        mut_fn = self.MUTATION_MAP.get(self.var_mutation.get())
+        self.sp_sigma.configure(state=tk.NORMAL if mut_fn == Mutation.gaussian_mutation else tk.DISABLED)
+
     def _set_x_values_text(self, text: str):
         self.txt_x_values.configure(state=tk.NORMAL)
         self.txt_x_values.delete("1.0", tk.END)
@@ -509,11 +612,19 @@ class GeneticAlgorithmGUI:
             b_max = float(self.var_bound_max.get())
             if b_min >= b_max:
                 raise ValueError("Początek przedziału (min) musi być mniejszy niż koniec (max).")
+            representation = self.var_representation.get()
             cross_prob = float(self.var_cross_prob.get())
             mut_prob = float(self.var_mut_prob.get())
             inv_prob = float(self.var_inv_prob.get())
             sel_param = float(self.var_selection_param.get())
             elite_val = float(self.var_elite_value.get())
+            alpha = float(self.var_alpha.get())
+            beta = float(self.var_beta.get())
+            sigma = float(self.var_sigma.get())
+            if alpha < 0 or beta < 0:
+                raise ValueError("Parametry α oraz β dla krzyżowania BLX muszą być >= 0.")
+            if sigma <= 0:
+                raise ValueError("Odchylenie standardowe σ dla mutacji Gaussa musi być > 0.")
         except Exception as exc:
             messagebox.showerror("Błąd konfiguracji", f"Niepoprawne parametry wejściowe:\n{exc}")
             return
@@ -526,12 +637,43 @@ class GeneticAlgorithmGUI:
 
         thread = threading.Thread(
             target=self._run_worker,
-            args=(num_vars, pop_size, epochs, num_runs, (b_min, b_max), cross_prob, mut_prob, inv_prob, sel_param, elite_val),
+            args=(
+                num_vars,
+                pop_size,
+                epochs,
+                num_runs,
+                (b_min, b_max),
+                representation,
+                cross_prob,
+                mut_prob,
+                inv_prob,
+                sel_param,
+                elite_val,
+                alpha,
+                beta,
+                sigma,
+            ),
             daemon=True,
         )
         thread.start()
 
-    def _run_worker(self, num_vars, pop_size, epochs, num_runs, bounds, cross_prob, mut_prob, inv_prob, sel_param, elite_val):
+    def _run_worker(
+        self,
+        num_vars,
+        pop_size,
+        epochs,
+        num_runs,
+        bounds,
+        representation,
+        cross_prob,
+        mut_prob,
+        inv_prob,
+        sel_param,
+        elite_val,
+        alpha,
+        beta,
+        sigma,
+    ):
         try:
             spec = FunctionRegistry.get_by_name(self.var_function.get())
             fitness_func = spec.create_evaluator(num_vars)
@@ -558,6 +700,7 @@ class GeneticAlgorithmGUI:
                     pop_size=pop_size,
                     epochs=epochs,
                     num_variables=num_vars,
+                    representation=representation,
                     bit_precision=bit_prec,
                     bounds=bounds,
                     fitness_func=fitness_func,
@@ -580,6 +723,9 @@ class GeneticAlgorithmGUI:
                     mut_prob=mut_prob,
                     inv_prob=inv_prob,
                     selection_param=sel_param,
+                    alpha=alpha,
+                    beta=beta,
+                    mutation_sigma=sigma,
                     progress_callback=_progress_cb,
                     verbose=False,
                 )
@@ -614,14 +760,18 @@ class GeneticAlgorithmGUI:
                 "timestamp": timestamp,
                 "function_name": spec.name,
                 "num_variables": num_vars,
+                "representation": representation,
                 "opt_type": opt_type,
                 "selection": self.var_selection.get(),
                 "selection_param": sel_param,
                 "crossover": self.var_crossover.get(),
                 "cross_prob": cross_prob,
+                "alpha": alpha,
+                "beta": beta,
                 "mutation": self.var_mutation.get(),
                 "mut_prob": mut_prob,
-                "inv_prob": inv_prob,
+                "mutation_sigma": sigma,
+                "inv_prob": inv_prob if representation == "binary" else None,
                 "num_runs": num_runs,
                 "runs_summary": {
                     "best_score": best_score,
@@ -686,8 +836,11 @@ class GeneticAlgorithmGUI:
         else:
             self.var_exec_time.set(f"{mean_time:.4f} s (śr. z {num_runs}x)")
 
-        total_bits = best_ga.num_variables * best_ga.bit_precision
-        self.var_res_epochs.set(f"{best_ga.epochs} epok | N={best_ga.num_variables} ({total_bits} b)")
+        if best_ga.representation == "binary":
+            total_bits = best_ga.num_variables * best_ga.bit_precision
+            self.var_res_epochs.set(f"{best_ga.epochs} epok | N={best_ga.num_variables} ({total_bits} b)")
+        else:
+            self.var_res_epochs.set(f"{best_ga.epochs} epok | N={best_ga.num_variables} (Rzecz.)")
 
         best_ind = best_ga.best_individual or Selection.best(best_ga.population, 1, best_ga.opt_type)[0]
         self.var_res_fx.set(f"{best_ind.fitness:.6f}")

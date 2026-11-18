@@ -8,6 +8,31 @@ class Mutation:
     def should_be_mutated(prob):
         return random.random() <= prob
 
+    # Mutacja równomierna (reprezentacja rzeczywista)
+    @staticmethod
+    def uniform_mutation(chromosome, prob):
+        if Mutation.should_be_mutated(prob):
+            indeks = random.randint(0, chromosome.num_variables - 1)
+            min_b, max_b = chromosome.bounds[indeks]
+            chromosome.genes[indeks] = random.uniform(min_b, max_b)
+            chromosome.fitness = None
+
+    # Mutacja Gaussa (reprezentacja rzeczywista)
+    @staticmethod
+    def gaussian_mutation(chromosome, prob, sigma=None):
+        if Mutation.should_be_mutated(prob):
+            indeks = random.randint(0, chromosome.num_variables - 1)
+            min_b, max_b = chromosome.bounds[indeks]
+
+            if sigma is None or sigma <= 0:
+                sigma_val = (max_b - min_b) * 0.1
+            else:
+                sigma_val = float(sigma)
+
+            new_value = chromosome.genes[indeks] + random.gauss(0.0, sigma_val)
+            chromosome.genes[indeks] = max(min_b, min(max_b, new_value))
+            chromosome.fitness = None
+
     # Prawdopodobieństwo inwersji
     @staticmethod
     def should_use_inversion(prob):

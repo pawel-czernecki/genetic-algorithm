@@ -11,12 +11,39 @@ from engine.mutation import Mutation
 from engine.selection import Selection
 
 
+_AUTO = object()
+
+_REAL_CROSSOVERS = {
+    Crossover.average_crossover,
+    Crossover.arithmetic_crossover,
+    Crossover.linear_crossover,
+    Crossover.blx_alpha,
+    Crossover.blx_alpha_beta,
+}
+_BINARY_CROSSOVERS = {
+    Crossover.onepoint_crossover,
+    Crossover.twopoint_crossover,
+    Crossover.uniform_crossover,
+    Crossover.granular,
+}
+_REAL_MUTATIONS = {
+    Mutation.uniform_mutation,
+    Mutation.gaussian_mutation,
+}
+_BINARY_MUTATIONS = {
+    Mutation.edge_mutation,
+    Mutation.onepoint_mutation,
+    Mutation.twopoint_mutation,
+}
+
+
 class GeneticAlgorithm:
     def __init__(
         self,
         pop_size,
         epochs,
         num_variables,
+        representation="binary",
         bit_precision=16,
         bounds=None,
         fitness_func=None,
@@ -25,6 +52,9 @@ class GeneticAlgorithm:
         elite_count=None,
         decimal_precision=None,
     ):
+        if representation not in ("real", "binary"):
+            raise ValueError(f"Nieobsługiwana reprezentacja: {representation!r}. Dozwolone: 'real', 'binary'.")
+
         self.pop_size = int(pop_size)
         self.epochs = int(epochs)
         self.fitness_func = fitness_func
@@ -32,8 +62,9 @@ class GeneticAlgorithm:
         self.elite_percent = elite_percent
         self.elite_count = elite_count
         self.num_variables = int(num_variables)
-        self.bit_precision = int(bit_precision) if bit_precision is not None else 16
-        self.decimal_precision = decimal_precision
+        self.representation = representation
+        self.bit_precision = (int(bit_precision) if bit_precision is not None else 16) if representation == "binary" else None
+        self.decimal_precision = decimal_precision if representation == "binary" else None
         self.bounds = Chromosome._normalize_bounds(bounds, self.num_variables)
 
         self.population = []
@@ -46,13 +77,14 @@ class GeneticAlgorithm:
         self.population = [
             Chromosome(
                 num_variables=self.num_variables,
-                bit_precision=self.bit_precision,
+                representation=self.representation,
+                bit_precision=self.bit_precision if self.bit_precision is not None else 16,
                 bounds=self.bounds,
                 decimal_precision=self.decimal_precision,
             )
             for _ in range(self.pop_size)
         ]
-        if self.population:
+        if self.population and self.representation == "binary":
             self.bit_precision = self.population[0].bit_precision
 
     def _get_elite_count(self):
@@ -110,19 +142,67 @@ class GeneticAlgorithm:
         self.history.append(stats)
         return best_ind, stats
 
+    def _resolve_operators(self, crossover_method, mutation_method):
+        if crossover_method is _AUTO or crossover_method is None:
+            crossover_method = (
+                Crossover.blx_alpha if self.representation == "real" else Crossover.onepoint_crossover
+            )
+        elif self.representation == "real" and crossover_method in _BINARY_CROSSOVERS:
+            raise ValueError("Wybrany operator krzyżowania jest przeznaczony wyłącznie dla reprezentacji binarnej.")
+        elif self.representation == "binary" and crossover_method in _REAL_CROSSOVERS:
+            raise ValueError("Wybrany operator krzyżowania jest przeznaczony wyłącznie dla reprezentacji rzeczywistej.")
+
+        if mutation_method is _AUTO:
+            mutation_method = (
+                Mutation.gaussian_mutation if self.representation == "real" else Mutation.onepoint_mutation
+            )
+        elif mutation_method is not None:
+            if self.representation == "real" and mutation_method in _BINARY_MUTATIONS:
+                raise ValueError("Wybrany operator mutacji jest przeznaczony wyłącznie dla reprezentacji binarnej.")
+            if self.representation == "binary" and mutation_method in _REAL_MUTATIONS:
+                raise ValueError("Wybrany operator mutacji jest przeznaczony wyłącznie dla reprezentacji rzeczywistej.")
+
+        return crossover_method, mutation_method
+
+    def _apply_crossover(self, crossover_method, parent1, parent2, cross_prob, alpha, beta):
+        if crossover_method == Crossover.linear_crossover:
+            return Crossover.linear_crossover(
+                parent1,
+                parent2,
+                cross_prob,
+                fitness_func=self.fitness_func,
+                opt_type=self.opt_type,
+            )
+        if crossover_method == Crossover.blx_alpha:
+            return Crossover.blx_alpha(parent1, parent2, cross_prob, alpha=alpha)
+        if crossover_method == Crossover.blx_alpha_beta:
+            return Crossover.blx_alpha_beta(parent1, parent2, cross_prob, alpha=alpha, beta=beta)
+        return crossover_method(parent1, parent2, cross_prob)
+
+    def _apply_mutation(self, mutation_method, chromosome, mut_prob, mutation_sigma):
+        if mutation_method == Mutation.gaussian_mutation:
+            Mutation.gaussian_mutation(chromosome, mut_prob, sigma=mutation_sigma)
+        else:
+            mutation_method(chromosome, mut_prob)
+
     def run(
         self,
         selection_method=Selection.tournament,
-        crossover_method=Crossover.onepoint_crossover,
-        mutation_method=Mutation.onepoint_mutation,
+        crossover_method=_AUTO,
+        mutation_method=_AUTO,
         cross_prob=0.8,
         mut_prob=0.3,
         inv_prob=0.3,
         selection_param=None,
+        alpha=0.5,
+        beta=0.25,
+        mutation_sigma=None,
         progress_callback=None,
         verbose=True,
     ):
         """Główna pętla ewolucyjna."""
+        crossover_method, mutation_method = self._resolve_operators(crossover_method, mutation_method)
+
         self.history = []
         self.best_individual = None
         start_time = time.perf_counter()
@@ -144,15 +224,17 @@ class GeneticAlgorithm:
                 rodzice = self._select_parents(selection_method, selection_param)
 
                 # Krzyżowanie z prawdopodobieństwem cross_prob
-                dziecko1, dziecko2 = crossover_method(rodzice[0], rodzice[1], cross_prob)
+                dziecko1, dziecko2 = self._apply_crossover(
+                    crossover_method, rodzice[0], rodzice[1], cross_prob, alpha, beta
+                )
 
                 # Mutacja z prawdopodobieństwem mut_prob
                 if mutation_method is not None and mut_prob > 0:
-                    mutation_method(dziecko1, mut_prob)
-                    mutation_method(dziecko2, mut_prob)
+                    self._apply_mutation(mutation_method, dziecko1, mut_prob, mutation_sigma)
+                    self._apply_mutation(mutation_method, dziecko2, mut_prob, mutation_sigma)
 
-                # Inwersja z prawdopodobieństwem inv_prob
-                if inv_prob > 0:
+                # Inwersja aplikowana wyłącznie dla reprezentacji binarnej
+                if self.representation == "binary" and inv_prob > 0:
                     Mutation.inversion(dziecko1, inv_prob)
                     Mutation.inversion(dziecko2, inv_prob)
 
@@ -223,6 +305,7 @@ class GeneticAlgorithm:
                 "pop_size": self.pop_size,
                 "epochs": self.epochs,
                 "num_variables": self.num_variables,
+                "representation": self.representation,
                 "bit_precision": self.bit_precision,
                 "decimal_precision": self.decimal_precision,
                 "bounds": self.bounds,

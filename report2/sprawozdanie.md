@@ -107,7 +107,7 @@ Do badań wybrano dwie funkcje testowe o odmiennej charakterystyce:
 
 ## 4. Metodologia badawcza i plan eksperymentów
 
-Każda badana konfiguracja algorytmu została uruchomiona **10 razy** z ustalonymi ziarnami losowości w celu zapewnienia powtarzalności i porównywalności pomiarów na tym samym środowisku sprzętowym.
+Każda badana konfiguracja algorytmu została uruchomiona **10 razy**.
 
 Dla każdej serii wyznaczono:
 
@@ -145,10 +145,10 @@ Wykresy przebiegu ewolucji przedstawiają zależność wartości funkcji celu od
 
 #### Komentarz do wyników:
 
-1. **Najwyższa skuteczność metody linearne-1:** Operator linearne-1 osiągnął zdecydowanie najlepszą średnią ($11.41$), najniższe minimum ($3.14$) oraz najniższe odchylenie standardowe serii ($3.98$). Wynika to z faktu, że w każdej parze rodziców bada trzy punkty ($Z, V, W$) i zatrzymuje dwa najlepiej ocenione przez funkcję celu, co wprowadza kierunkową presję lokalnego przeszukiwania.
-2. **Porównanie z wariantem linearne-2:** Wariant linearne-2 był wyraźnie szybszy ($0.1631\text{ s}$ wobec $0.2086\text{ s}$), ponieważ korzysta z już wyznaczonych ocen rodziców zamiast wykonywać trzy ewaluacje potomstwa. Na silnie wielomodalnej funkcji Rastrigin osiągnął jednak gorszą średnią ($37.45$), gdyż przesunięcia zależne od skali dziedziny $0.5(b_i - a_i)$ wzdłuż jednego wektora kierunkowego $\gamma$ z dużym prawdopodobieństwem ($90\%$) ekstrapolują poza lokalną dolinę lub przy $\Lambda = 0$ kopiują lepszego rodzica.
-3. **Koszt czasowy oceny dodatkowych kandydatów:** Krzyżowanie linearne-1 było o około $30\text{–}60\%$ wolniejsze ($0.2086\text{ s}$) niż pozostałe operatory ($0.1269\text{–}0.1631\text{ s}$), ponieważ w momencie zajścia krzyżowania wymaga trzech ewaluacji funkcji celu zamiast dwóch. Najszybsze okazało się proste krzyżowanie uśredniające ($0.1269\text{ s}$).
-4. **Zachowanie BLX-$\alpha$ i BLX-$\alpha\beta$ w krótkim budżecie epok:** Przy zaledwie $100$ epokach szerokie przedziały mieszania ($\alpha = 0.5$) silnie podtrzymują różnorodność i spowalniają dogęszczanie populacji wokół minimum (średnia $24.04$ dla BLX-$\alpha$ i $22.83$ dla BLX-$\alpha\beta$), podczas gdy krzyżowanie uśredniające ($16.16$) i arytmetyczne ($19.11$) szybciej ściągają wektory do centrum populacji.
+1. **Najwyższa skuteczność metody linearne-1:** Operator linearne-1 osiągnął zdecydowanie najlepszą średnią ($11.41$), najniższe minimum ($3.14$) oraz najniższe odchylenie standardowe serii ($3.98$). Wynika to z faktu, że w każdej parze rodziców bada trzy punkty ($Z, V, W$) i zatrzymuje dwa najlepsze.
+2. **Porównanie z wariantem linearne-2:** Wariant linearne-2 był wyraźnie szybszy ($0.1631\text{ s}$ wobec $0.2086\text{ s}$), ponieważ korzysta z już wyznaczonych ocen rodziców zamiast wykonywać trzy ewaluacje potomstwa.
+3. **Koszt czasowy oceny dodatkowych kandydatów:** Krzyżowanie linearne-1 było o około $30\text{–}60\%$ wolniejsze ($0.2086\text{ s}$) niż pozostałe operatory ($0.1269\text{–}0.1631\text{ s}$).
+4. **Wyniki BLX-$\alpha$ i BLX-$\alpha\beta$ przy małej liczbie epok:** Dla $100$ epok operatory BLX-$\alpha$ (średnia $24.04$) oraz BLX-$\alpha\beta$ (średnia $22.83$) wypadły słabiej, ponieważ przy $\alpha = 0.5$ losują potomstwo z dość szerokiego przedziału wokół rodziców i wolniej zbiegają do minimum. Z kolei krzyżowanie uśredniające ($16.16$) i arytmetyczne ($19.11$) generują potomków pomiędzy rodzicami, dzięki czemu przy małej liczbie iteracji szybciej zawężają obszar poszukiwań.
 
 ---
 
@@ -174,42 +174,22 @@ Wykresy przebiegu ewolucji przedstawiają zależność wartości funkcji celu od
 
 #### Komentarz do wyników:
 
-1. **Kluczowy wpływ odchylenia $\sigma$ w mutacji Gaussa:** Odległość między sąsiednimi minimami lokalnymi funkcji Rastrigin wynosi $1.0$. Zbyt małe zaburzenie ($\sigma = 0.1$) nie pozwala osobnikom przeskakiwać barier potencjału pomiędzy sąsiednimi dolinami, przez co algorytm utyka w pułapkach lokalnych (średnia aż $32.35$, odchylenie $12.12$). Zwiększenie odchylenia do $\sigma = 1.5$ ($\approx 15\%$ szerokości przedziału $[-5.12, 5.12]$) poprawia średni wynik ponad dwukrotnie – do **$13.84$** przy najmniejszym rozrzucie ($\sigma_{\text{serii}} = 3.49$).
-2. **Mutacja równomierna vs mutacja Gaussa:** Mutacja równomierna uzyskała najlepszy pojedynczy wynik w tej serii ($8.49$) i drugą najniższą średnią ($15.04$), ponieważ losowanie nowej wartości z całego przedziału $[-5.12, 5.12]$ skutecznie przełamuje przedwczesną zbieżność na funkcji wielomodalnej. Mutacja Gaussa z odpowiednio dobranym $\sigma = 1.5$ osiąga jednak lepszą średnią i stabilność, ponieważ dominują w niej umiarkowane skoki wokół aktualnych rozwiązań.
-3. **Wpływ parametrów $\alpha$ i $\beta$ w krzyżowaniu mieszającym:** Zmniejszenie $\alpha$ z $0.5$ do $0.25$ w BLX-$\alpha$ poprawiło średnią z $24.04$ do $16.63$, ograniczając nadmierną ekspansję poza obszar zajmowany przez rodziców w krótkim przebiegu $100$ epok. Asymetryczny wariant BLX-$\alpha\beta$ ($\alpha=0.5, \beta=0.25$) również okazał się nieco lepszy średnio ($22.83$) niż symetryczne BLX-$\alpha$ ($24.04$). Czasy obliczeń wszystkich konfiguracji były praktycznie identyczne ($\approx 0.16\text{ s}$).
-
----
-
-### 5.3. Eksperyment 3: Wpływ metody selekcji w reprezentacji rzeczywistej
-
-* **Stałe parametry:** Funkcja: Rastrigin, $N = 20$, Reprezentacja: Rzeczywista, Populacja = 80, Epoki = 100, Krzyżowanie: BLX-$\alpha$ ($p_c = 0.80, \alpha = 0.5$), Mutacja: Gaussa ($p_m = 0.30, \sigma = 0.5$), Elitaryzm = 10%.
-
-| Metoda selekcji | Parametr selekcji | Średnia $f(x)$ | Najlepszy wynik | Najgorszy wynik | Odch. std serii | Śr. czas [s] |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Najlepszych (Truncation)** | pula = 10% | **14.987155** | **6.112598** | **25.272750** | 6.498559 | 0.1785 |
-| **Najlepszych (Truncation)** | pula = 50% | 18.244020 | 11.010597 | 26.729189 | **5.176333** | 0.1799 |
-| **Turniejowa** | $k = 7$ | 21.917703 | 6.425687 | 35.787541 | 9.923401 | 0.1794 |
-| **Turniejowa** | $k = 3$ | 24.041170 | 12.536232 | 34.064169 | 6.101933 | **0.1671** |
-| **Koło ruletki** | — | 31.960454 | 15.309827 | 42.865444 | 8.375305 | 0.2112 |
-| *Najgorszych (kontrola)* | pula = 50% | *245.622693* | *187.361474* | *277.074869* | *22.805797* | *0.1826* |
-
-#### Komentarz do wyników:
-
-1. **Równowaga presji selekcyjnej i eksploracji BLX-$\alpha$:** Ponieważ operator BLX-$\alpha$ ($\alpha=0.5$) silnie poszerza przestrzeń przeszukiwań, wyższa presja selekcyjna w selekcji najlepszych (pula $10\%$, średnia $14.99$; pula $50\%$, średnia $18.24$) pozwoliła szybciej wykorzystywać obiecujące obszary niż turniej $k=3$ ($24.04$).
-2. **Stabilność vs losowość selekcji:** Selekcja najlepszych ($50\%$) wykazała najniższy rozrzut między próbami ($\sigma_{\text{serii}} = 5.18$), natomiast duży turniej ($k = 7$) przy wysokim najlepszym wyniku ($6.43$) cechował się większą wariancją ($\sigma_{\text{serii}} = 9.92$). Koło ruletki okazało się najsłabszą i najwolniejszą ($0.2112\text{ s}$) spośród metod maksymalizujących dopasowanie, a próba kontrolna z selekcją najgorszych ($245.62$) potwierdziła poprawność kierunku selekcji.
+1. **Wpływ parametru $\sigma$ w mutacji Gaussa:** Dla funkcji Rastrigin sąsiednie minima lokalne są oddalone od siebie o około $1.0$. Przy zbyt małym odchyleniu ($\sigma = 0.1$) zmiany są za małe, żeby wydostać się z minimów lokalnych, przez co algorytm w nich utyka (średnia $32.35$, odchylenie $12.12$). Zwiększenie $\sigma$ do $1.5$ poprawiło średni wynik ponad dwukrotnie – do **$13.84$**, a wyniki pomiędzy kolejnymi uruchomieniami były najbardziej powtarzalne (odchylenie $3.49$).
+2. **Mutacja równomierna a mutacja Gaussa:** Mutacja równomierna dała najlepszy pojedynczy wynik w tym eksperymencie ($8.49$) oraz drugą najniższą średnią ($15.04$). Losowanie nowej wartości z całego zakresu $[-5.12, 5.12]$ pomaga wyjść z minimów lokalnych, ale mutacja Gaussa z $\sigma = 1.5$ okazała się bardziej stabilna i dała lepszą średnią, bo częściej modyfikuje rozwiązania w pobliżu ich aktualnych wartości.
+3. **Wpływ parametrów $\alpha$ i $\beta$ w krzyżowaniu mieszającym:** Zmniejszenie $\alpha$ z $0.5$ do $0.25$ w BLX-$\alpha$ poprawiło średnią z $24.04$ do $16.63$, ponieważ przy $100$ epokach mniejszy przedział losowania potomstwa przyspiesza zbieżność. Wariant BLX-$\alpha\beta$ ($\alpha=0.5, \beta=0.25$) także wypadł trochę lepiej średnio ($22.83$) od BLX-$\alpha$ ($24.04$). Czas działania dla wszystkich badanych konfiguracji był niemal taki sam ($\approx 0.16\text{ s}$).
 
 ---
 
 ## 6. Porównanie reprezentacji klasycznej (binarnej) oraz rzeczywistej
 
-W Eksperymencie 4 porównano bezpośrednio obie reprezentacje na tym samym środowisku sprzętowo-programowym przy identycznym budżecie ewaluacji (Populacja = $200$, Epoki = $1000$, Selekcja turniejowa $k = 3$, Elitaryzm = $10\%$, $p_c = 0.80$, $p_m = 0.30$, $10$ uruchomień) dla wymiarów $N \in \{10, 20, 30\}$ na funkcjach **Rastrigin** oraz **CEC2014 F2: Rotated Bent Cigar**:
+W Eksperymencie 3 porównano bezpośrednio obie reprezentacje na tym samym środowisku sprzętowo-programowym przy identycznym budżecie ewaluacji (Populacja = $200$, Epoki = $1000$, Selekcja turniejowa $k = 3$, Elitaryzm = $10\%$, $p_c = 0.80$, $p_m = 0.30$, $10$ uruchomień) dla wymiarów $N \in \{10, 20, 30\}$ na funkcjach **Rastrigin** oraz **CEC2014 F2: Rotated Bent Cigar**:
 
 * **Reprezentacja rzeczywista:** Krzyżowanie BLX-$\alpha$ ($\alpha = 0.5$), Mutacja Gaussa ($\sigma = 0.1 \cdot (b - a)$, tzn. $\sigma \approx 1.024$ dla Rastrigin oraz $\sigma = 20.0$ dla CEC2014 F2), brak inwersji.
 * **Reprezentacja binarna:** $20$ bitów na zmienną (długość chromosomu $200, 400, 600$ bitów), Krzyżowanie dwupunktowe, Mutacja jednopunktowa, Inwersja ($p_i = 0.30$).
 
 ### 6.1. Wyniki dla funkcji Rastrigin ($f^* = 0.0$)
 
-| Wymiar $N$ | Reprezentacja | Średnia $f(x)$ | Najlepszy $f(x)$ | Najgorszy $f(x)$ | Odch. std ($\sigma$) | Śr. czas [s] |
+| Wymiar $N$ | Reprezentacja | Średnia $f(x)$ | Najlepszy $f(x)$ | Najgorszy $f(x)$ | Odch. std | Śr. czas [s] |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | **$N = 10$** | **Rzeczywista** | **0.000000** | **0.000000** | **0.000000** | **0.000000** | **2.64 s** |
 | **$N = 10$** | Binarna (200 bitów) | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 4.64 s |
@@ -220,7 +200,7 @@ W Eksperymencie 4 porównano bezpośrednio obie reprezentacje na tym samym środ
 
 ### 6.2. Wyniki dla funkcji CEC2014 F2: Rotated Bent Cigar ($f^* = 200.0$)
 
-| Wymiar $N$ | Reprezentacja | Średnia $f(x)$ | Najlepszy $f(x)$ | Najgorszy $f(x)$ | Odch. std ($\sigma$) | Śr. czas [s] |
+| Wymiar $N$ | Reprezentacja | Średnia $f(x)$ | Najlepszy $f(x)$ | Najgorszy $f(x)$ | Odch. std | Śr. czas [s] |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | **$N = 10$** | **Rzeczywista** | **1 855.85** | **345.90** | **5 251.28** | **1 826.19** | **3.68 s** |
 | **$N = 10$** | Binarna (200 bitów) | 3 627 884.28 | 28 543.16 | 16 797 938.84 | 5 593 199.88 | 5.90 s |
@@ -242,39 +222,38 @@ W Eksperymencie 4 porównano bezpośrednio obie reprezentacje na tym samym środ
 
 ---
 
-### 6.3. Zestawienie zbiorcze błędów i czasu obliczeń
+### 6.3. Zestawienie zbiorcze błędów
 
-| Funkcja testowa | $N$ | Optimum $f^*$ | Błąd najlepszy<br>$\|f^* - f_{\min}\|$ (Rzecz.) | Błąd najlepszy<br>$\|f^* - f_{\min}\|$ (Bin.) | Błąd średni<br>$\|f^* - \bar{f}\|$ (Rzecz.) | Błąd średni<br>$\|f^* - \bar{f}\|$ (Bin.) | Przyspieszenie czasu (Bin. / Rzecz.) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Rastrigin** | 10 | $0.0$ | **$0.00 \cdot 10^0$** | $4.73 \cdot 10^{-8}$ | **$0.00 \cdot 10^0$** | $4.73 \cdot 10^{-8}$ | $1.75\times$ |
-| **Rastrigin** | 20 | $0.0$ | **$0.00 \cdot 10^0$** | $9.46 \cdot 10^{-8}$ | **$1.47 \cdot 10^{-8}$** | $0.123582$ | $1.93\times$ |
-| **Rastrigin** | 30 | $0.0$ | **$0.00 \cdot 10^0$** | $1.42 \cdot 10^{-7}$ | **$5.37 \cdot 10^{-5}$** | $0.646703$ | $2.00\times$ |
-| **CEC2014 F2** | 10 | $200.0$ | **$145.90$** | $28\,343.16$ | **$1\,655.85$** | $3\,627\,684.28$ | $1.60\times$ |
-| **CEC2014 F2** | 20 | $200.0$ | **$0.00$** | $1\,453\,867.56$ | **$0.00$** | $26\,088\,947.32$ | $1.89\times$ |
-| **CEC2014 F2** | 30 | $200.0$ | **$20.47$** | $2\,930\,142.63$ | **$10\,282.29$** | $92\,546\,864.38$ | $2.01\times$ |
+| Funkcja testowa | Wymiar | Optimum | Błąd najlepszy (Rzecz.) | Błąd najlepszy (Bin.) | Błąd średni (Rzecz.) | Błąd średni (Bin.) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Rastrigin** | 10 | 0.0 | **0.000000** | $4.73 \cdot 10^{-8}$ | **0.000000** | $4.73 \cdot 10^{-8}$ |
+| **Rastrigin** | 20 | 0.0 | **0.000000** | $9.46 \cdot 10^{-8}$ | **$1.47 \cdot 10^{-8}$** | 0.123582 |
+| **Rastrigin** | 30 | 0.0 | **0.000000** | $1.42 \cdot 10^{-7}$ | **$5.37 \cdot 10^{-5}$** | 0.646703 |
+| **CEC2014 F2** | 10 | 200.0 | **145.90** | 28 343.16 | **1 655.85** | 3 627 684.28 |
+| **CEC2014 F2** | 20 | 200.0 | **0.00** | 1 453 867.56 | **0.00** | 26 088 947.32 |
+| **CEC2014 F2** | 30 | 200.0 | **20.47** | 2 930 142.63 | **10 282.29** | 92 546 864.38 |
 
 #### Analiza porównawcza:
 
-1. **Przewaga dokładności na funkcji wielomodalnej (Rastrigin):**  
-   Choć najlepsze pojedyncze uruchomienia reprezentacji binarnej również trafiały w okolicę minimum globalnego ($0.0$), to w wymiarach $N = 20$ i $N = 30$ część prób binarnych zatrzymywała się w sąsiednim minimum lokalnym ($f \approx 1.24$ i $2.23$, średnie błędy $0.124$ oraz $0.647$). Reprezentacja rzeczywista osiągnęła $100\%$ powtarzalności dla $N = 10$ i $N = 20$ (błąd średni $\le 1.47 \cdot 10^{-8}$) oraz błąd średni zaledwie $5.37 \cdot 10^{-5}$ dla $N = 30$, bez ograniczeń siatki kwantyzacji.
+1. **Większa dokładność na funkcji Rastrigin:**  
+   W wersji binarnej najlepsze pojedyncze uruchomienia również zbliżały się do minimum globalnego ($0.0$), ale dla $N = 20$ i $N = 30$ część prób zatrzymywała się w sąsiednich minimach lokalnych (najgorsze wyniki to $1.24$ i $2.23$, a średnie błędy $0.124$ oraz $0.647$). Reprezentacja rzeczywista za każdym razem trafiała w okolice optimum dla $N = 10$ i $N = 20$ (błąd średni $\le 1.47 \cdot 10^{-8}$), a dla $N = 30$ uzyskała średni błąd $5.37 \cdot 10^{-5}$.
 
-2. **Przełomowa poprawa na silnie uwarunkowanej funkcji CEC2014 F2:**  
-   W zadaniu *Rotated Bent Cigar* zmiana reprezentacji przyniosła poprawę o **3 do 6 rzędów wielkości**. Przy $N = 10$ błąd średni spadł z $3.63 \cdot 10^6$ (binarna) do $1.66 \cdot 10^3$ (rzeczywista), a przy $N = 30$ z $9.25 \cdot 10^7$ do $1.03 \cdot 10^4$ (najlepszy wynik $220.47$, czyli błąd zaledwie $20.47$ wobec $2.93 \cdot 10^6$ w wersji binarnej!). W wymiarze $N = 20$, w którym macierz obrotu CEC2014 F2 zawiera większy udział osiowo wyrównanych składowych przekątnych, operator BLX-$\alpha$ odnalazł dokładne optimum $f^* = 200.0$ we wszystkich 10 próbach.
+2. **Znacznie lepsze wyniki na funkcji CEC2014 F2:**  
+   Dla funkcji *Rotated Bent Cigar* przejście na reprezentację rzeczywistą zmniejszyło błąd o **3 do 6 rzędów wielkości**. Przy $N = 10$ średni błąd spadł z $3.63 \cdot 10^6$ (binarna) do $1.66 \cdot 10^3$ (rzeczywista), a przy $N = 30$ z $9.25 \cdot 10^7$ do $1.03 \cdot 10^4$ (najlepszy wynik wyniósł $220.47$, czyli błąd $20.47$, wobec $2.93 \cdot 10^6$ dla wersji binarnej). Dla $N = 20$ wersja rzeczywista znalazła dokładne optimum ($200.0$) we wszystkich 10 uruchomieniach.
 
-3. **Dwukrotne przyspieszenie obliczeń:**  
-   Reprezentacja rzeczywista okazała się systematycznie szybsza od binarnej – w wymiarze $N = 10$ o $1.60\times\text{–}1.75\times$, a dla $N = 30$ dokładnie **$2.00\times$ szybciej** ($5.35\text{ s}$ wobec $10.71\text{ s}$ na Rastrigin oraz $5.42\text{ s}$ wobec $10.91\text{ s}$ na CEC2014 F2). Eliminacja konwersji ciągów 600 bitów na liczby zmiennoprzecinkowe w każdej epoce oraz rezygnacja z operatora inwersji znacząco obniżają narzut obliczeniowy silnika.
+3. **Krótszy czas obliczeń:**  
+   Reprezentacja rzeczywista działała szybciej od binarnej dla każdego badanego wymiaru – dla $N = 10$ ponad $1.6$ razy szybciej, a dla $N = 30$ około **2 razy szybciej** ($5.35\text{ s}$ wobec $10.71\text{ s}$ na Rastrigin i $5.42\text{ s}$ wobec $10.91\text{ s}$ na CEC2014 F2). Wynika to głównie z tego, że nie trzeba w każdej epoce zamieniać długich ciągów bitów na liczby zmiennoprzecinkowe ani wykonywać operatora inwersji.
 
 ---
 
 ## 7. Wnioski końcowe
 
-1. **Przewaga reprezentacji rzeczywistej w optymalizacji ciągłej:**  
-   Zastąpienie kodowania binarnego wektorem liczb zmiennoprzecinkowych eliminuje błędy dyskretyzacji oraz problem tzw. klifów Hamminga (gdzie zmiana pojedynczego bitu skokowo przemieszcza rozwiązanie). Pozwala to algorytmowi genetycznemu precyzyjnie poruszać się wzdłuż wąskich dolin funkcji silnie uwarunkowanych (CEC2014 F2) oraz osiągać wyższą powtarzalność na funkcjach wielomodalnych (Rastrigin).
+1. **Przewaga reprezentacji rzeczywistej nad binarną:**  
+   Zapisywanie osobników bezpośrednio jako wektorów liczb zmiennoprzecinkowych usuwa błędy przybliżenia wynikające z kodowania bitowego oraz nagłe skoki wartości przy zmianie pojedynczego bitu. Dzięki temu algorytm znacznie lepiej radzi sobie na trudnych funkcjach ciągłych (jak CEC2014 F2) oraz daje bardziej powtarzalne wyniki na funkcji wielomodalnej Rastrigin.
 
-2. **Znacząca poprawa wydajności czasowej:**  
-   Brak konieczności dekodowania długich chromosomów binarnych ($200\text{–}600$ bitów) oraz brak inwersji skraca czas obliczeń o $37\%\text{–}50\%$ (do $2\times$ szybciej dla $N = 30$), co zwiększa opłacalność obliczeń dla wysokich wymiarów problemu.
+2. **Krótszy czas działania:**  
+   Brak konieczności zamiany długich ciągów bitów ($200\text{–}600$ bitów) na liczby rzeczywiste oraz brak operatora inwersji skróciły czas obliczeń o około $37\%\text{–}50\%$ (dla $N = 30$ program działał około 2 razy szybciej). Różnica ta staje się szczególnie istotna wraz ze wzrostem wymiaru problemu.
 
-3. **Dobór operatorów ciągłych i ich parametrów:**
-   * **Krzyżowanie:** W krótkim horyzoncie czasowym ($100$ epok) najlepiej spisało się **krzyżowanie linearne-1** dzięki selekcji 2 najlepszych spośród 3 kandydatów (uzyskując wyraźnie lepszą średnią niż wariant **linearne-2**). W długich przebiegach ($1000$ epok) na złożonych funkcjach obróconych bardzo dobrze sprawdziło się **krzyżowanie BLX-$\alpha$**, które stale podtrzymuje eksplorację przestrzeni.
-   * **Mutacja:** Kluczowy wpływ ma dopasowanie odchylenia $\sigma$ mutacji Gaussa do skali dziedziny i rozstawu minimów lokalnych (zbyt małe $\sigma = 0.1$ powoduje utykanie w minimach lokalnych, natomiast automatyczne $\sigma = 0.1 \cdot (b - a)$ lub $\sigma = 1.5$ zapewnia skuteczne przeskoki między dolinami). Mutacja równomierna stanowi dobrą alternatywę utrzymującą globalną eksplorację.
-   * **Selekcja:** W reprezentacji rzeczywistej z operatorem BLX-$\alpha$ korzystne okazały się metody o wyższej presji selekcyjnej (selekcja najlepszych z pulą $10\%\text{–}50\%$), dobrze równoważące szerokie próbkowanie potomstwa przez krzyżowanie mieszające.
+3. **Dobór operatorów i parametrów:**
+   * **Krzyżowanie:** Przy małej liczbie epok ($100$) najlepsze wyniki dało **krzyżowanie linearne-1**, ponieważ wybiera dwa najlepsze rozwiązania z trzech wygenerowanych (wypadło wyraźnie lepiej niż **linearne-2**). Przy dłuższych przebiegach ($1000$ epok) na trudniejszych funkcjach dobrze sprawdziło się **krzyżowanie BLX-$\alpha$**, które lepiej przeszukuje przestrzeń rozwiązań.
+   * **Mutacja:** W mutacji Gaussa duże znaczenie ma dobranie parametru $\sigma$ do dziedziny funkcji – zbyt małe $\sigma = 0.1$ powodowało utykanie w minimach lokalnych, natomiast większe wartości ($\sigma = 1.5$ lub domyślne $\sigma = 0.1 \cdot (b - a)$) pozwalały z nich wychodzić. Dobrą alternatywą okazała się również mutacja równomierna.

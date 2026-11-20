@@ -1,4 +1,5 @@
 import copy
+import math
 import random
 
 
@@ -82,6 +83,48 @@ class Crossover:
             return best_three[0], best_three[1]
 
         return cand_v, cand_w
+
+    @staticmethod
+    def _make_bga_child(c1, c2, dist):
+        child = copy.deepcopy(c1)
+        child.fitness = None
+        if dist == 0.0:
+            return child
+
+        sign = -1.0 if random.random() < 0.9 else 1.0
+        lam = sum((2.0 ** -k) for k in range(16) if random.random() < (1.0 / 16.0))
+
+        for i in range(c1.num_variables):
+            min_b, max_b = c1.bounds[i]
+            r_i = 0.5 * (max_b - min_b)
+            gamma_i = (c2.genes[i] - c1.genes[i]) / dist
+            child.genes[i] = Crossover._clamp(c1.genes[i] + sign * r_i * gamma_i * lam, min_b, max_b)
+
+        return child
+
+    # Krzyżowanie linearne-2 (Linear BGA – Schlierkamp-Voosen 1994 / Herrera et al. 1998)
+    @staticmethod
+    def linear_bga_crossover(parent1, parent2, prob, fitness_func=None, opt_type="min"):
+        if not Crossover.should_be_crossovered(prob):
+            return copy.deepcopy(parent1), copy.deepcopy(parent2)
+
+        f1 = parent1.fitness
+        f2 = parent2.fitness
+        if f1 is None and fitness_func is not None:
+            f1 = float(fitness_func(parent1.decode()))
+        if f2 is None and fitness_func is not None:
+            f2 = float(fitness_func(parent2.decode()))
+
+        if f1 is not None and f2 is not None:
+            p1_better = f1 >= f2 if opt_type == "max" else f1 <= f2
+            c1, c2 = (parent1, parent2) if p1_better else (parent2, parent1)
+        else:
+            c1, c2 = parent1, parent2
+
+        dist = math.sqrt(sum((g2 - g1) ** 2 for g1, g2 in zip(c1.genes, c2.genes)))
+        child1 = Crossover._make_bga_child(c1, c2, dist)
+        child2 = Crossover._make_bga_child(c1, c2, dist)
+        return child1, child2
 
     # Krzyżowanie mieszające typu alfa (BLX-alpha)
     @staticmethod

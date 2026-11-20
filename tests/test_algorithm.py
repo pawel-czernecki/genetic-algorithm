@@ -180,6 +180,38 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
         lc_max1, lc_max2 = Crossover.linear_crossover(lp1, lp2, 1.0, fitness_func=sphere, opt_type="max")
         self.assertEqual(sorted([lc_max1.genes, lc_max2.genes]), [[-1.0, -1.0], [1.0, 1.0]])
 
+        # Linearne-2 (Linear BGA – Schlierkamp-Voosen 1994)
+        bga_p1 = Chromosome(2, "real", bounds=(-5, 5), genes=[1.0, 1.0])
+        bga_p2 = Chromosome(2, "real", bounds=(-5, 5), genes=[3.0, 3.0])
+        # prob=0.0 -> bez zmian
+        nc1, nc2 = Crossover.linear_bga_crossover(bga_p1, bga_p2, 0.0, fitness_func=sphere, opt_type="min")
+        self.assertEqual(nc1.genes, [1.0, 1.0])
+        self.assertEqual(nc2.genes, [3.0, 3.0])
+
+        # prob=1.0 -> przesunięcie wzdłuż prostej rodziców w granicach [min, max]
+        random.seed(7)
+        bc_min1, bc_min2 = Crossover.linear_bga_crossover(bga_p1, bga_p2, 1.0, fitness_func=sphere, opt_type="min")
+        for child in (bc_min1, bc_min2):
+            self.assertIsNone(child.fitness)
+            self.assertAlmostEqual(child.genes[0], child.genes[1], places=9)
+            for v in child.genes:
+                self.assertGreaterEqual(v, -5.0)
+                self.assertLessEqual(v, 5.0)
+
+        bc_max1, bc_max2 = Crossover.linear_bga_crossover(bga_p1, bga_p2, 1.0, fitness_func=sphere, opt_type="max")
+        for child in (bc_max1, bc_max2):
+            self.assertAlmostEqual(child.genes[0], child.genes[1], places=9)
+            for v in child.genes:
+                self.assertGreaterEqual(v, -5.0)
+                self.assertLessEqual(v, 5.0)
+
+        # Przypadek brzegowy: identyczni rodzice (dist == 0.0)
+        same_c1, same_c2 = Crossover.linear_bga_crossover(bga_p1, bga_p1.clone(), 1.0, fitness_func=sphere)
+        self.assertEqual(same_c1.genes, [1.0, 1.0])
+        self.assertEqual(same_c2.genes, [1.0, 1.0])
+        self.assertIsNone(same_c1.fitness)
+        self.assertIsNone(same_c2.fitness)
+
         # BLX-alpha z niestandardowym alpha i zachowaniem granic
         random.seed(42)
         bc1, bc2 = Crossover.blx_alpha(p1, p2, 1.0, alpha=0.2)
@@ -231,6 +263,7 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
             Crossover.average_crossover,
             Crossover.arithmetic_crossover,
             Crossover.linear_crossover,
+            Crossover.linear_bga_crossover,
             Crossover.blx_alpha,
             Crossover.blx_alpha_beta,
         ):
@@ -276,6 +309,8 @@ class TestGeneticAlgorithmProject(unittest.TestCase):
         ga_bin = GeneticAlgorithm(10, 2, 3, representation="binary", bounds=(-5, 5), fitness_func=evaluator)
         with self.assertRaises(ValueError):
             ga_bin.run(crossover_method=Crossover.blx_alpha, verbose=False)
+        with self.assertRaises(ValueError):
+            ga_bin.run(crossover_method=Crossover.linear_bga_crossover, verbose=False)
         with self.assertRaises(ValueError):
             ga_bin.run(mutation_method=Mutation.gaussian_mutation, verbose=False)
 

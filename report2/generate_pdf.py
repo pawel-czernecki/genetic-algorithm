@@ -81,11 +81,14 @@ def latex_to_html(tex: str) -> str:
 
     s = s.replace(r"\alpha", "&alpha;")
     s = s.replace(r"\beta", "&beta;")
+    s = s.replace(r"\gamma", "&gamma;")
+    s = s.replace(r"\Gamma", "&Gamma;")
     s = s.replace(r"\pi", "&pi;")
     s = s.replace(r"\sigma", "&sigma;")
     s = s.replace(r"\delta", "&delta;")
     s = s.replace(r"\Delta", "&Delta;")
     s = s.replace(r"\lambda", "&lambda;")
+    s = s.replace(r"\Lambda", "&Lambda;")
     s = s.replace(r"\mathbb{R}", "&#8477;")
 
     s = s.replace(r"\min", "min").replace(r"\max", "max")

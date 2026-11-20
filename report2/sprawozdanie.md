@@ -12,18 +12,17 @@
 
 ## 1. Informacje o wykorzystywanych technologiach
 
-Projekt stanowi rozszerzenie aplikacji z Projektu 1, zrealizowane w paradygmacie obiektowym w języku **Python**, z zachowaniem separacji pomiędzy warstwą silnika ewolucyjnego (`engine/`) a warstwą interfejsu graficznego (`gui/`). Silnik został rozbudowany o obsługę **reprezentacji rzeczywistej** chromosomu, pięć ciągłych operatorów krzyżowania, dwie ciągłe metody mutacji oraz dynamiczne przełączanie między reprezentacją rzeczywistą i binarną w GUI.
+Projekt stanowi rozszerzenie aplikacji z Projektu 1. Silnik został rozbudowany o obsługę **reprezentacji rzeczywistej** chromosomu, ciągłe operatory krzyżowania (arytmetyczne, linearne-1, linearne-2, BLX-$\alpha$, BLX-$\alpha\beta$, uśredniające), dwie ciągłe metody mutacji (równomierną oraz Gaussa) i dynamiczne przełączanie między reprezentacją rzeczywistą i binarną w GUI.
 
-* **Język programowania:** Python 3.10+ (środowisko testowe: Python 3.14.10).
-* **Interfejs graficzny (GUI):** `Tkinter` oraz `ttk` (wielowątkowe wykonywanie obliczeń z paskiem postępu, automatyczne filtrowanie operatorów pod wybraną reprezentację oraz dynamiczna konfiguracja parametrów $\alpha$, $\beta$ i $\sigma$).
-* **Wizualizacja wykresów:** `matplotlib` (wersja `3.11.2`) – wykresy osadzone w GUI (`FigureCanvasTkAgg`, `NavigationToolbar2Tk`) oraz eksport wykresów PNG.
+* **Język programowania:** Python 3.10+ (środowisko testowe: Python 3.10.12).
+* **Interfejs graficzny (GUI):** `Tkinter` oraz `ttk` (wbudowane w bibliotekę standardową Pythona, wielowątkowe wykonywanie obliczeń z paskiem postępu i asynchroniczną aktualizacją kontrolek).
+* **Wizualizacja wykresów:** `matplotlib` (wersja `3.10.9`) – wykresy osadzone bezpośrednio w oknie aplikacji za pomocą `FigureCanvasTkAgg` oraz `NavigationToolbar2Tk`.
 * **Biblioteki obliczeniowe:**
-    * `numpy` (wersja `2.5.5`) – operacje wektorowe i macierzowe przy ewaluacji funkcji celu.
-    * `scipy` (wersja `1.18.1`) – wymagana zależność wewnętrzna biblioteki `benchmark_functions`.
-* **Biblioteki funkcji testowych:**
+    * `numpy` (wersja `2.2.6`) – wektoryzacja obliczeń numerycznych, operacje tablicowe na chromosomach i populacji.
+* **Biblioteki zaimplementowanych funkcji testowych:**
     * `benchmark_functions` (wersja `1.1.4`) – wielowymiarowe funkcje ciągłe (*Hypersphere*, *Ackley*, *Rastrigin*).
-    * `opfunu` (wersja `1.0.1`, wymaga `setuptools<81`) – oficjalny pakiet benchmarków IEEE CEC 2014 (*F2: Rotated Bent Cigar Function*).
-* **Zapis danych i serializacja:** standardowe moduły `csv` oraz `json` (zapis konfiguracji, w tym typu reprezentacji, oraz przebiegu wszystkich epok do katalogu `results/`).
+    * `opfunu` (wersja `1.0.4`) – oficjalny pakiet benchmarków konferencji IEEE CEC 2014 (*F2: Rotated Bent Cigar Function*).
+* **Zapis danych i serializacja:** standardowe moduły `csv` oraz `json` (automatyczny zapis historii iteracji do katalogu `results/`).
 
 ---
 
@@ -31,20 +30,18 @@ Projekt stanowi rozszerzenie aplikacji z Projektu 1, zrealizowane w paradygmacie
 
 ### 2.1. Wymagania systemowe
 
-* System operacyjny: Linux (Fedora / Ubuntu / Debian)
-* Zainstalowany interpreter: Python $\ge 3.10$ wraz z obsługą `venv` oraz pakietem systemowym `tkinter` do uruchamiania GUI (`python3-tkinter` na Fedora/RHEL lub `python3-tk` na Ubuntu/Debian).
+* System operacyjny: Linux
+* Zainstalowany interpreter: Python $\ge 3.10$
 
 ### 2.2. Zestawienie bibliotek i zależności
 Wszystkie zależności zewnętrzne zdefiniowano w pliku `requirements.txt`:
 
-| Biblioteka | Wersja minimalna / testowana | Rola w projekcie |
+| Biblioteka | Wersja | Rola w projekcie |
 | :--- | :---: | :--- |
-| `numpy` | `>=1.24.0` (`2.5.5`) | Operacje numeryczne i tablicowe na wektorach decyzyjnych |
-| `scipy` | `>=1.10.0` (`1.18.1`) | Zależność wymagana przez moduł `benchmark_functions` |
-| `matplotlib` | `>=3.7.0` (`3.11.2`) | Generowanie i osadzanie wykresów zbieżności w GUI |
-| `setuptools` | `<81` (`80.10.2`) | Dostarcza `pkg_resources` wymagane przez `opfunu` |
-| `benchmark_functions` | `>=1.1.3` (`1.1.4`) | Implementacja funkcji Hypersphere, Ackley, Rastrigin |
-| `opfunu` | `>=1.0.0` (`1.0.1`) | Implementacja funkcji CEC 2014 (F2 Bent Cigar) |
+| `numpy` | `2.2.6` | Wektoryzacja operacji genetycznych i obliczeń macierzowych |
+| `matplotlib` | `3.10.9` | Generowanie i osadzanie wykresów zbieżności w GUI |
+| `benchmark_functions` | `1.1.4` | Gotowa implementacja funkcji Hypersphere, Ackley, Rastrigin |
+| `opfunu` | `1.0.4` | Gotowa implementacja funkcji CEC 2014 (F2 Bent Cigar) |
 
 Instalacja środowiska i zależności:
 ```bash
@@ -54,74 +51,57 @@ pip install -r requirements.txt
 ```
 
 ### 2.3. Uruchomienie aplikacji
-Uruchomienie interfejsu graficznego (GUI):
+Aplikacja uruchamia się w trybie graficznym:
 ```bash
 venv/bin/python main.py
 ```
 
-Uruchomienie demonstracyjnego trybu konsolowego oraz testów jednostkowych:
-```bash
-venv/bin/python main.py --cli
-PYTHONPATH=. venv/bin/python -m unittest discover -s tests -v
-```
-
 ---
 
-## 3. Wybrane funkcje testowe i implementacja reprezentacji rzeczywistej
+## 3. Wybrane funkcje testowe
 
-### 3.1. Funkcje testowe wykorzystane w badaniach
+Do badań wybrano dwie funkcje testowe o odmiennej charakterystyce:
 
-Do oceny skuteczności reprezentacji rzeczywistej oraz porównania jej z reprezentacją binarną z Projektu 1 wykorzystano te same dwie funkcje testowe o odmiennej charakterystyce:
+1. Jedną funkcję z biblioteki `benchmark_functions`: **Rastrigin** ($N = 20$) – funkcja silnie wielomodalna z gęstą siecią minimów lokalnych.
+2. Jedną funkcję trudniejszą z zawodów IEEE CEC 2014 z biblioteki `opfunu`: **CEC2014 F2: Rotated Bent Cigar Function** ($N = 10, 20, 30$).
 
-#### Funkcja 1: Rastrigin [benchmark_functions]
+### 3.1. Funkcja 1: Rastrigin [benchmark_functions]
 
 * **Wzór matematyczny:**
   $$f(x) = 10 \cdot N + \sum_{i=1}^N \left( x_i^2 - 10 \cos(2\pi x_i) \right)$$
 
 * **Dziedzina poszukiwań:** $x_i \in [-5.12, 5.12]$ dla każdego $i \in \{1, \dots, N\}$
-* **Charakterystyka:** funkcja silnie wielomodalna (*highly multimodal*), nieliniowa, posiadająca gęstą sieć minimów lokalnych rozmieszczonych w regularnych odstępach co $\approx 1.0$. Głównym wyzwaniem jest uniknięcie przedwczesnego utknięcia w lokalnych minimach.
+* **Charakterystyka:** funkcja wysoce wielomodalna (*highly multimodal*), nieliniowa, o regularnym rozmieszczeniu dużej liczby minimów lokalnych (odległość pomiędzy sąsiednimi minimami wynosi $\approx 1.0$). Główną trudnością dla algorytmu optymalizacyjnego jest uniknięcie uwięzienia w licznych lokalnych pułapkach i odnalezienie globalnego minimum.
 * **Rysunek poglądowy funkcji:**  
   ![Wykres 3D funkcji Rastrigin](images/rastrigin_3d.png)  
   *Wykres 3D powierzchni funkcji Rastrigin dla przestrzeni dwuwymiarowej ($N = 2$).*
-* **Teoretyczne minimum globalne:** $f^* = 0.0$ w punkcie $x^* = [0.0, \dots, 0.0]$.
 
-#### Funkcja 2: CEC2014 F2 (Rotated Bent Cigar Function)
+* **Teoretyczne wartości optimum:**
+  * Wartość optimum: $f^* = 0.0$
+  * Argumenty optimum $x^*$ dla badanych wymiarów:
+    * Dla $N = 20$: $x^* = [0.0, \dots, 0.0]$ ($20$ zer)
+    * Dla $N = 10$: $x^* = [0.0, \dots, 0.0]$ ($10$ zer)
+    * Dla $N = 30$: $x^* = [0.0, \dots, 0.0]$ ($30$ zer)
+
+---
+
+### 3.2. Funkcja 2: CEC2014 F2 (Rotated Bent Cigar Function)
 
 * **Wzór matematyczny:**
   $$f(x) = z_1^2 + 10^6 \sum_{i=2}^N z_i^2 + f_{\text{bias}}, \quad z = M \cdot (x - o)$$
   gdzie $M$ to macierz obrotu, $o$ to wektor przesunięcia, a $f_{\text{bias}} = 200.0$.
 
 * **Dziedzina poszukiwań:** $x_i \in [-100.0, 100.0]$
-* **Charakterystyka:** funkcja przesunięta i obrócona o bardzo wąskiej, stromej grani (*narrow ridge*) i silnym złym uwarunkowaniu ($10^6$ na składowych $z_2, \dots, z_N$). Wymaga precyzyjnego, ciągłego dostrajania wszystkich współrzędnych jednocześnie.
+* **Charakterystyka:** funkcja obrócona (*rotated*), przesunięta (*shifted*), o bardzo wąskiej i stromej grani (*narrow ridge*), silnie uwarunkowana numerycznie.
 * **Rysunek poglądowy funkcji:**  
   ![Wykres 3D funkcji Bent Cigar](images/bent_cigar_3d.png)  
   *Wykres 3D powierzchni funkcji Bent Cigar dla przestrzeni dwuwymiarowej ($N = 2$).*
-* **Teoretyczne minimum globalne:** $f^* = 200.0$ w punkcie $x^* = o_2$ (dla $N = 10$: `[-54.050831, 47.085527, -30.205593, 4.565302, -53.496203, 16.317111, -37.924594, 24.652656, 30.274321, 39.704255]`).
 
----
-
-### 3.2. Reprezentacja rzeczywista oraz zaimplementowane operatory
-
-W klasie `Chromosome` (`engine/chromosome.py`) w trybie `representation="real"` osobnik reprezentowany jest bezpośrednio jako wektor $N$ liczb zmiennoprzecinkowych $x = [x_1, x_2, \dots, x_N]$, bez konwersji binarnej i błędów kwantyzacji. Po każdym operatorze genetycznym wartości są przycinane (`_clamp`) do granic dziedziny $[a_i, b_i]$.
-
-* **Zaimplementowane operatory krzyżowania rzeczywistego (`engine/crossover.py`):**
-    1. **Arytmetyczne (`arithmetic_crossover`):** dla losowego $k \in [0, 1]$ tworzy parę potomków jako kombinację wypukłą rodziców:
-       $$y_i^{(1)} = k x_i^{(1)} + (1 - k) x_i^{(2)}, \quad y_i^{(2)} = (1 - k) x_i^{(1)} + k x_i^{(2)}$$
-    2. **Linearne (`linear_crossover`, Wright 1991):** z pary rodziców generuje trzech kandydatów ($Z$ uśredniony oraz $V, W$ eksploracyjne poza odcinek łączący rodziców):
-       $$Z_i = 0.5 x_i^{(1)} + 0.5 x_i^{(2)}$$
-       $$V_i = 1.5 x_i^{(1)} - 0.5 x_i^{(2)}, \quad W_i = -0.5 x_i^{(1)} + 1.5 x_i^{(2)}$$
-       a następnie ocenia wszystkie trzy wektory funkcją celu i wybiera **dwa najlepsze** osobniki do nowej populacji.
-    3. **Mieszające typu $\alpha$ (`blx_alpha`, BLX-$\alpha$):** dla każdego genu $d_i = |x_i^{(1)} - x_i^{(2)}|$ losuje wartości potomków z rozkładu jednostajnego na rozszerzonym symetrycznie przedziale:
-       $$y_i \sim \mathcal{U}\big(\min(x_i^{(1)}, x_i^{(2)}) - \alpha d_i,\; \max(x_i^{(1)}, x_i^{(2)}) + \alpha d_i\big)$$
-    4. **Mieszające typu $\alpha$ i $\beta$ (`blx_alpha_beta`, BLX-$\alpha\beta$):** asymetryczne uogólnienie BLX-$\alpha$ z niezależnymi współczynnikami rozszerzenia dolnego ($\alpha$) i górnego ($\beta$):
-       $$y_i \sim \mathcal{U}\big(\min(x_i^{(1)}, x_i^{(2)}) - \alpha d_i,\; \max(x_i^{(1)}, x_i^{(2)}) + \beta d_i\big)$$
-    5. **Uśredniające (`average_crossover`):** wyznacza punkt środkowy między rodzicami:
-       $$y_i = \frac{x_i^{(1)} + x_i^{(2)}}{2}$$
-
-* **Zaimplementowane operatory mutacji rzeczywistej (`engine/mutation.py`):**
-    1. **Mutacja równomierna (`uniform_mutation`):** losuje indeks zmiennej $i$ i zastępuje jej wartość nową liczbą z rozkładu jednostajnego $x_i' \sim \mathcal{U}(a_i, b_i)$.
-    2. **Mutacja Gaussa (`gaussian_mutation`):** dodaje do losowej współrzędnej zaburzenie z rozkładu normalnego o średniej $0$ i zadanym odchyleniu $\sigma$ (domyślnie $\sigma = 0.1 \cdot (b_i - a_i)$):
-       $$x_i' = \min\big(b_i,\; \max(a_i,\; x_i + \mathcal{N}(0, \sigma))\big)$$
+* **Teoretyczne wartości optimum:**
+  * Wartość optimum: $f^* = 200.0$
+  * Argumenty optimum $x^* = o_2$ (wektor przesunięcia zdefiniowany w zbiorze testowym CEC2014):
+    * Dla $N = 10$:  
+      $x^* =$ `[-54.050831, 47.085527, -30.205593, 4.565302, -53.496203, 16.317111, -37.924594, 24.652656, 30.274321, 39.704255]`
 
 ---
 
@@ -150,23 +130,25 @@ Wykresy przebiegu ewolucji przedstawiają zależność wartości funkcji celu od
 | Metoda krzyżowania | $p_c$ | Średnia $f(x)$ | Najlepszy wynik | Najgorszy wynik | Odch. std serii | Śr. czas [s] |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Arytmetyczne** | 0.8 | 19.113899 | 5.879955 | 32.809893 | 8.022653 | 0.1428 |
-| **Linearne** | 0.8 | **11.410645** | **3.137567** | **16.717091** | **3.984448** | 0.2086 |
+| **Linearne-1** | 0.8 | **11.410645** | **3.137567** | **16.717091** | **3.984448** | 0.2086 |
+| **Linearne-2** | 0.8 | 37.454408 | 13.081599 | 56.346325 | 12.670932 | 0.1631 |
 | **Mieszające typu alfa (BLX-$\alpha$, $\alpha=0.5$)** | 0.8 | 24.041170 | 12.536232 | 34.064169 | 6.101933 | 0.1627 |
 | **Mieszające typu $\alpha$ i $\beta$ (BLX-$\alpha\beta$, $0.5, 0.25$)** | 0.8 | 22.834877 | 14.090566 | 35.811014 | 5.757205 | 0.1627 |
 | **Uśredniające** | 0.8 | 16.157683 | 9.608655 | 23.323641 | 4.288544 | **0.1269** |
 
-#### Wykresy z najlepszej serii (Krzyżowanie linearne, $f_{\min} = 3.137567$):
+#### Wykresy z najlepszej serii (Krzyżowanie linearne-1, $f_{\min} = 3.137567$):
 ![Wykres wartości funkcji celu - Krzyżowanie rzeczywiste](images/exp1_best_plot9a.png)  
-*Rysunek 1: Zależność wartości funkcji celu od kolejnej iteracji dla najlepszej serii w Eksperymencie 1 (krzyżowanie linearne). Linia ciągła czerwona oznacza najlepsze uruchomienie, a linie przerywane – pozostałe 9 prób.*
+*Rysunek 1: Zależność wartości funkcji celu od kolejnej iteracji dla najlepszej serii w Eksperymencie 1 (krzyżowanie linearne-1). Linia ciągła czerwona oznacza najlepsze uruchomienie, a linie przerywane – pozostałe 9 prób.*
 
 ![Wykres średniej i odchylenia - Krzyżowanie rzeczywiste](images/exp1_best_plot9b.png)  
-*Rysunek 2: Średnia wartość funkcji celu oraz odchylenie standardowe wewnątrz populacji w kolejnych iteracjach dla najlepszego uruchomienia z krzyżowaniem linearnym.*
+*Rysunek 2: Średnia wartość funkcji celu oraz odchylenie standardowe wewnątrz populacji w kolejnych iteracjach dla najlepszego uruchomienia (krzyżowanie linearne-1).*
 
 #### Komentarz do wyników:
 
-1. **Najwyższa skuteczność krzyżowania linearnego:** Operator linearny osiągnął zdecydowanie najlepszą średnią ($11.41$), najniższe minimum ($3.14$) oraz najniższe odchylenie standardowe serii ($3.98$). Wynika to z faktu, że w każdej parze rodziców bada trzy punkty ($Z, V, W$) i zatrzymuje dwa najlepiej ocenione przez funkcję celu, co wprowadza kierunkową presję lokalnego przeszukiwania.
-2. **Koszt czasowy oceny dodatkowych kandydatów:** Krzyżowanie linearne było o około $30\text{–}60\%$ wolniejsze ($0.2086\text{ s}$) niż pozostałe operatory ($0.1269\text{–}0.1627\text{ s}$), ponieważ w momencie zajścia krzyżowania wymaga trzech ewaluacji funkcji celu zamiast dwóch. Najszybsze okazało się proste krzyżowanie uśredniające ($0.1269\text{ s}$).
-3. **Zachowanie BLX-$\alpha$ i BLX-$\alpha\beta$ w krótkim budżecie epok:** Przy zaledwie $100$ epokach szerokie przedziały mieszania ($\alpha = 0.5$) silnie podtrzymują różnorodność i spowalniają dogęszczanie populacji wokół minimum (średnia $24.04$ dla BLX-$\alpha$ i $22.83$ dla BLX-$\alpha\beta$), podczas gdy krzyżowanie uśredniające ($16.16$) i arytmetyczne ($19.11$) szybciej ściągają wektory do centrum populacji.
+1. **Najwyższa skuteczność metody linearne-1:** Operator linearne-1 osiągnął zdecydowanie najlepszą średnią ($11.41$), najniższe minimum ($3.14$) oraz najniższe odchylenie standardowe serii ($3.98$). Wynika to z faktu, że w każdej parze rodziców bada trzy punkty ($Z, V, W$) i zatrzymuje dwa najlepiej ocenione przez funkcję celu, co wprowadza kierunkową presję lokalnego przeszukiwania.
+2. **Porównanie z wariantem linearne-2:** Wariant linearne-2 był wyraźnie szybszy ($0.1631\text{ s}$ wobec $0.2086\text{ s}$), ponieważ korzysta z już wyznaczonych ocen rodziców zamiast wykonywać trzy ewaluacje potomstwa. Na silnie wielomodalnej funkcji Rastrigin osiągnął jednak gorszą średnią ($37.45$), gdyż przesunięcia zależne od skali dziedziny $0.5(b_i - a_i)$ wzdłuż jednego wektora kierunkowego $\gamma$ z dużym prawdopodobieństwem ($90\%$) ekstrapolują poza lokalną dolinę lub przy $\Lambda = 0$ kopiują lepszego rodzica.
+3. **Koszt czasowy oceny dodatkowych kandydatów:** Krzyżowanie linearne-1 było o około $30\text{–}60\%$ wolniejsze ($0.2086\text{ s}$) niż pozostałe operatory ($0.1269\text{–}0.1631\text{ s}$), ponieważ w momencie zajścia krzyżowania wymaga trzech ewaluacji funkcji celu zamiast dwóch. Najszybsze okazało się proste krzyżowanie uśredniające ($0.1269\text{ s}$).
+4. **Zachowanie BLX-$\alpha$ i BLX-$\alpha\beta$ w krótkim budżecie epok:** Przy zaledwie $100$ epokach szerokie przedziały mieszania ($\alpha = 0.5$) silnie podtrzymują różnorodność i spowalniają dogęszczanie populacji wokół minimum (średnia $24.04$ dla BLX-$\alpha$ i $22.83$ dla BLX-$\alpha\beta$), podczas gdy krzyżowanie uśredniające ($16.16$) i arytmetyczne ($19.11$) szybciej ściągają wektory do centrum populacji.
 
 ---
 
@@ -293,6 +275,6 @@ W Eksperymencie 4 porównano bezpośrednio obie reprezentacje na tym samym środ
    Brak konieczności dekodowania długich chromosomów binarnych ($200\text{–}600$ bitów) oraz brak inwersji skraca czas obliczeń o $37\%\text{–}50\%$ (do $2\times$ szybciej dla $N = 30$), co zwiększa opłacalność obliczeń dla wysokich wymiarów problemu.
 
 3. **Dobór operatorów ciągłych i ich parametrów:**
-   * **Krzyżowanie:** W krótkim horyzoncie czasowym ($100$ epok) najlepiej spisało się **krzyżowanie linearne** dzięki selekcji 2 najlepszych spośród 3 kandydatów. W długich przebiegach ($1000$ epok) na złożonych funkcjach obróconych bardzo dobrze sprawdziło się **krzyżowanie BLX-$\alpha$**, które stale podtrzymuje eksplorację przestrzeni.
+   * **Krzyżowanie:** W krótkim horyzoncie czasowym ($100$ epok) najlepiej spisało się **krzyżowanie linearne-1** dzięki selekcji 2 najlepszych spośród 3 kandydatów (uzyskując wyraźnie lepszą średnią niż wariant **linearne-2**). W długich przebiegach ($1000$ epok) na złożonych funkcjach obróconych bardzo dobrze sprawdziło się **krzyżowanie BLX-$\alpha$**, które stale podtrzymuje eksplorację przestrzeni.
    * **Mutacja:** Kluczowy wpływ ma dopasowanie odchylenia $\sigma$ mutacji Gaussa do skali dziedziny i rozstawu minimów lokalnych (zbyt małe $\sigma = 0.1$ powoduje utykanie w minimach lokalnych, natomiast automatyczne $\sigma = 0.1 \cdot (b - a)$ lub $\sigma = 1.5$ zapewnia skuteczne przeskoki między dolinami). Mutacja równomierna stanowi dobrą alternatywę utrzymującą globalną eksplorację.
    * **Selekcja:** W reprezentacji rzeczywistej z operatorem BLX-$\alpha$ korzystne okazały się metody o wyższej presji selekcyjnej (selekcja najlepszych z pulą $10\%\text{–}50\%$), dobrze równoważące szerokie próbkowanie potomstwa przez krzyżowanie mieszające.

@@ -29,7 +29,8 @@ class GeneticAlgorithmGUI:
 
     REAL_CROSSOVER_MAP = {
         "Arytmetyczne (Arithmetic)": Crossover.arithmetic_crossover,
-        "Linearne (Linear)": Crossover.linear_crossover,
+        "Linearne-1 (Wright)": Crossover.linear_crossover,
+        "Linearne-2 (Linear BGA)": Crossover.linear_bga_crossover,
         "Mieszające typu alfa (BLX-α)": Crossover.blx_alpha,
         "Mieszające typu alfa i beta (BLX-αβ)": Crossover.blx_alpha_beta,
         "Uśredniające (Average)": Crossover.average_crossover,

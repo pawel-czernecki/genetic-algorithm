@@ -17,6 +17,7 @@ _REAL_CROSSOVERS = {
     Crossover.average_crossover,
     Crossover.arithmetic_crossover,
     Crossover.linear_crossover,
+    Crossover.linear_bga_crossover,
     Crossover.blx_alpha,
     Crossover.blx_alpha_beta,
 }
@@ -165,8 +166,8 @@ class GeneticAlgorithm:
         return crossover_method, mutation_method
 
     def _apply_crossover(self, crossover_method, parent1, parent2, cross_prob, alpha, beta):
-        if crossover_method == Crossover.linear_crossover:
-            return Crossover.linear_crossover(
+        if crossover_method in (Crossover.linear_crossover, Crossover.linear_bga_crossover):
+            return crossover_method(
                 parent1,
                 parent2,
                 cross_prob,
